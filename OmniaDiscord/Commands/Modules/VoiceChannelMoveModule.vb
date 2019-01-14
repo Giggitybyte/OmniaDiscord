@@ -129,7 +129,7 @@ Namespace Commands.Modules
                     With embed
                         .Color = DiscordColor.Red
                         .Title = "Cannot Move Users"
-                        .Description = $"The total number of users of `{originChannel.Name}` and `{destinationChannel.Name}` would exceede the user limit of `{destinationChannel.Name}`"
+                        .Description = $"The total number of users would exceede the user limit of `{destinationChannel.Name}`"
                     End With
                 Else
                     Dim userCount As Integer

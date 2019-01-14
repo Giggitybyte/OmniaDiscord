@@ -99,29 +99,27 @@ Namespace Commands.Modules
         End Function
 
         <Command("remove"), RequireStaff>
-        <Description("Remove a title from a user.")>
-        Public Async Function RemoveTitle(ctx As CommandContext, titleName As String, user As DiscordMember) As Task
-            Await ctx.TriggerTypingAsync()
+        <Description("Removes the current title of a user.")>
+        Public Async Function RemoveTitle(ctx As CommandContext, user As DiscordMember) As Task
             Dim embed As New DiscordEmbedBuilder
+            Dim title As GuildTitle = 0
 
-            Dim title As GuildTitle
-            If [Enum].TryParse(titleName, True, title) Then
+            Await ctx.TriggerTypingAsync()
+
+            For Each staffTitle As GuildTitle In [Enum].GetValues(GetType(GuildTitle))
+                If GuildData.StaffTitles(staffTitle).Contains(user.Id) Then title = staffTitle
+            Next
+
+            If title > 0 Then
                 If DoesMeetMinimumTitleRequirement(ctx, title) Then
-                    If GuildData.StaffTitles(title).Contains(user.Id) Then
-                        GuildData.StaffTitles(title).Remove(user.Id)
+                    GuildData.StaffTitles(title).Remove(user.Id)
+                    UpdateGuildData()
 
-                        With embed
-                            .Color = DiscordColor.SpringGreen
-                            .Title = "Title Successfully Removed"
-                            .Description = $"{user.Mention} no longer has the title of `{title.ToString}`"
-                        End With
-                    Else
-                        With embed
-                            .Color = DiscordColor.Red
-                            .Title = "Couldn't Remove Title"
-                            .Description = $"{user.Mention} does not have the title of `{title.ToString}`"
-                        End With
-                    End If
+                    With embed
+                        .Color = DiscordColor.SpringGreen
+                        .Title = "Title Successfully Removed"
+                        .Description = $"{user.Mention} no longer has the title of `{title.ToString}`"
+                    End With
                 Else
                     With embed
                         .Color = DiscordColor.Red
@@ -132,12 +130,11 @@ Namespace Commands.Modules
             Else
                 With embed
                     .Color = DiscordColor.Red
-                    .Title = "Invalid Title Name"
-                    .Description = $"Valid title names: {String.Join(", ", [Enum].GetNames(GetType(GuildTitle)).Select(Function(typeName) $"`{typeName}`"))}"
+                    .Title = "Couldn't Remove Title"
+                    .Description = $"{user.Mention} does not have a title."
                 End With
             End If
 
-            UpdateGuildData()
             Await ctx.RespondAsync(embed:=embed.Build())
         End Function
 
