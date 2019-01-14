@@ -32,7 +32,7 @@ Namespace Commands.Modules
 
         <Command("set")>
         <Description("Changes the custom prefix for this server.")>
-        <RequireTitle(GuildTitle.ADMIN)>
+        <RequireTitle(GuildTitle.Admin)>
         Public Async Function SetPrefix(ctx As CommandContext, <RemainingText> newPrefix As String) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim oldPrefix As String = GuildSettings.Prefix
@@ -65,7 +65,7 @@ Namespace Commands.Modules
 
         <Command("reset")>
         <Description("Removes the custom prefix for this server.")>
-        <RequireTitle(GuildTitle.ADMIN)>
+        <RequireTitle(GuildTitle.Admin)>
         Public Async Function ResetPrefix(ctx As CommandContext) As Task
             Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity
             Dim conformationCode As String = Utilities.GenerateRandomChars(8)

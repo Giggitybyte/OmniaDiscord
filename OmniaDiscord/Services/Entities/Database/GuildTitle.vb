@@ -1,7 +1,7 @@
 ﻿Namespace Services.Entities.Database
     Public Enum GuildTitle
-        ADMIN = 3
-        MODERATOR = 2
-        HELPER = 1
+        Admin = 3
+        Moderator = 2
+        Helper = 1
     End Enum
 End Namespace

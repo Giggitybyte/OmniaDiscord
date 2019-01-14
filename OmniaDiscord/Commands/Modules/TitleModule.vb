@@ -143,14 +143,14 @@ Namespace Commands.Modules
 #Region "Helper Methods"
 
         Private Function DoesMeetMinimumTitleRequirement(ctx As CommandContext, title As GuildTitle) As Boolean
-            If title = GuildTitle.ADMIN Then
+            If title = GuildTitle.Admin Then
                 If ctx.Guild.Owner.Id = ctx.Member.Id Then Return True
 
-            ElseIf title = GuildTitle.MODERATOR Then
-                If DoesHaveRequiredTitle(ctx, GuildTitle.ADMIN) Then Return True
+            ElseIf title = GuildTitle.Moderator Then
+                If DoesHaveRequiredTitle(ctx, GuildTitle.Admin) Then Return True
 
-            ElseIf title = GuildTitle.HELPER Then
-                If DoesHaveRequiredTitle(ctx, GuildTitle.MODERATOR) Then Return True
+            ElseIf title = GuildTitle.Helper Then
+                If DoesHaveRequiredTitle(ctx, GuildTitle.Moderator) Then Return True
 
             End If
 

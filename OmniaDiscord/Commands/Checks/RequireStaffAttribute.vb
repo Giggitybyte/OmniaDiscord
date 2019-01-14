@@ -17,9 +17,9 @@ Namespace Commands.Checks
             Dim data As GuildData = ctx.Services.GetService(Of DatabaseService).GetGuildData(ctx.Guild.Id)
 
             ' Check if user has a title.
-            If data.StaffTitles(GuildTitle.ADMIN).Contains(ctx.Member.Id) Or
-               data.StaffTitles(GuildTitle.MODERATOR).Contains(ctx.Member.Id) Or
-               data.StaffTitles(GuildTitle.HELPER).Contains(ctx.Member.Id) Then Return Task.FromResult(True)
+            If data.StaffTitles(GuildTitle.Admin).Contains(ctx.Member.Id) Or
+               data.StaffTitles(GuildTitle.Moderator).Contains(ctx.Member.Id) Or
+               data.StaffTitles(GuildTitle.Helper).Contains(ctx.Member.Id) Then Return Task.FromResult(True)
 
 
             Return Task.FromResult(False)

@@ -10,9 +10,9 @@
         Sub New()
             _DiscJockeys = New List(Of ULong)
             _StaffTitles = New Dictionary(Of GuildTitle, List(Of ULong)) From {
-                {GuildTitle.ADMIN, New List(Of ULong)()},
-                {GuildTitle.MODERATOR, New List(Of ULong)()},
-                {GuildTitle.HELPER, New List(Of ULong)()}
+                {GuildTitle.Admin, New List(Of ULong)()},
+                {GuildTitle.Moderator, New List(Of ULong)()},
+                {GuildTitle.Helper, New List(Of ULong)()}
             }
         End Sub
 
