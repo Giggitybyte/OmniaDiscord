@@ -4,6 +4,7 @@
     <OutputType>Exe</OutputType>
     <RootNamespace>OmniaDiscord</RootNamespace>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <StartupObject>Sub Main</StartupObject>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +20,10 @@
     <None Update="config.json">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Commands\Modules\Enums\" />
   </ItemGroup>
 
 </Project>

@@ -1,4 +1,4 @@
-﻿Namespace Enums
+﻿Namespace Core
     Public Enum OmniaRunMode
         Release = 1
         Testing = 2
