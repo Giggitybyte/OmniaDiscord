@@ -149,6 +149,22 @@ Namespace Core
                             Dim check As RequireUserPermissionsAttribute = CType(failedCheck, RequireUserPermissionsAttribute)
                             embed.Description &= $"You don't have the right permissions to use this command. Required permissions: {check.Permissions.ToPermissionString}.{Environment.NewLine}"
 
+                        ElseIf TryCast(failedCheck, CooldownAttribute) IsNot Nothing Then
+                            Dim check As CooldownAttribute = CType(failedCheck, CooldownAttribute)
+                            Dim remainingTime As String = Utilities.FormatTimespan(check.GetRemainingCooldown(arg.Context))
+                            Dim scope As String = String.Empty
+
+                            Select Case check.BucketType
+                                Case CooldownBucketType.User
+                                    scope = "for you"
+                                Case CooldownBucketType.Channel
+                                    scope = "in this channel"
+                                Case CooldownBucketType.Guild
+                                    scope = "for this server"
+                            End Select
+
+                            embed.Description &= $"`{arg.Command.QualifiedName}` is on cooldown {scope}. Remaining time: {remainingTime}.{Environment.NewLine}"
+
                         ElseIf TryCast(failedCheck, RequireGuildAttribute) IsNot Nothing Then
                             embed.Description &= $"This command can only be used on a server.{Environment.NewLine}"
 
@@ -216,11 +232,8 @@ Namespace Core
             Public ReadOnly Property FortniteApiKey As String
             Public ReadOnly Property RainbowSixApiPasscode As String
 
-            ' Server Addresses
-            Public ReadOnly Property ServerAddresses As New Dictionary(Of String, String)
-
             ' Miscellaneous
-            Public ReadOnly Property ResourcesUrl As String
+            Public ReadOnly Property ResourceUrl As String
             Public Property RunMode As OmniaRunMode
 
             Sub New()
@@ -239,6 +252,7 @@ Namespace Core
                 _YoutubeApiKey = config("youtubeapikey")
                 _LavalinkPasscode = config("lavalinkpasscode")
                 _RainbowSixApiPasscode = config("r6apipasscode")
+                _ResourceUrl = config("resourceurl")
             End Sub
         End Class
     End Class

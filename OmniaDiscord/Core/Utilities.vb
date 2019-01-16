@@ -90,7 +90,7 @@ Namespace Core
 
             If timeSpan.Hours > 0 Then
                 If timeSpan.Minutes > 0 Then
-                    Return timeSpan.ToString("h\h\ mm\m")
+                    Return timeSpan.ToString("h\h\ m\m")
                 Else
                     Return timeSpan.ToString("h\h")
                 End If
@@ -98,12 +98,12 @@ Namespace Core
 
             If timeSpan.Minutes > 0 Then
                 If timeSpan.Seconds > 0 Then
-                    Return timeSpan.ToString("m\m\ ss\s")
+                    Return timeSpan.ToString("m\m\ s\s")
                 Else
                     Return timeSpan.ToString("m\m")
                 End If
             Else
-                Return timeSpan.ToString("ss\s")
+                Return timeSpan.ToString("s\s")
             End If
         End Function
 

@@ -14,6 +14,7 @@ Namespace Commands.Modules
         <Command("getfiles"), RequireGuild>
         <Description("Searches through the last 1,000 messages in a Discord channel and retrieves all files from messages with an attachment. Messages from bots are ignored.")>
         <RequireBotPermissions(Permissions.AttachFiles Or Permissions.EmbedLinks)>
+        <Cooldown(1, 8, CooldownBucketType.Guild)>
         Public Async Function GetFiles(ctx As CommandContext, Optional channel As DiscordChannel = Nothing) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim retrievalChannel As DiscordChannel = Nothing
@@ -65,7 +66,7 @@ Namespace Commands.Modules
 
                             Try
                                 Dim extenstion As String = attachment.FileName.Substring(attachment.FileName.LastIndexOf("."c)).ToLower
-                                Await webClient.DownloadFileTaskAsync(attachment.Url, $"{downloadPath}/{Utilities.GenerateRandomChars(16)}{extenstion}")
+                                Await webClient.DownloadFileTaskAsync(attachment.Url, $"{downloadPath}/{Core.Utilities.GenerateRandomChars(16)}{extenstion}")
                             Catch ex As WebException
                                 failureCount += 1
                             End Try

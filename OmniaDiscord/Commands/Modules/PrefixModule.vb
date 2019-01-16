@@ -68,7 +68,7 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function ResetPrefix(ctx As CommandContext) As Task
             Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity
-            Dim conformationCode As String = Utilities.GenerateRandomChars(8)
+            Dim conformationCode As String = Core.Utilities.GenerateRandomChars(8)
             Dim embed As New DiscordEmbedBuilder
 
             With embed
