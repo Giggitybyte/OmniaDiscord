@@ -82,10 +82,10 @@ Namespace Commands.Modules
 
                         .Color = DiscordColor.SpringGreen
 
+                        .Description &= $"Endorsement Level {owPlayer.EndorsementLevel} - "
                         .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_shotcaller:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.SHOTCALLER) * 100)}%` "
                         .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_teammate:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.GOODTEAMMATE) * 100)}%` "
                         .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_sportsmanship:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.SPORTSMANSHIP) * 100)}%`"
-                        .Description &= $"{Environment.NewLine}**Endorsement Level: `{owPlayer.EndorsementLevel}`**"
 
                         If owPlayer.IsProfilePrivate Then
                             strBuilder.Append($"This player has their profile set to private.{Environment.NewLine}QP and Competitive stats are unavailable for this player.")

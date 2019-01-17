@@ -67,43 +67,43 @@ Namespace Core
             Return FormatTimespan(total)
         End Function
 
-        Public Shared Function FormatTimespan(timeSpan As TimeSpan, Optional goBeyondHours As Boolean = False) As String
-            If goBeyondHours Then
-                If (Math.Floor(timeSpan.Days / 365) <> 0) Then
-                    Return $"{(timeSpan.Days / 365).ToString("N1")}y {(timeSpan.Days / 30).ToString("N1")}m"
+        Public Shared Function FormatTimespan(time As TimeSpan, Optional notRestrictedToHours As Boolean = False) As String
+            If notRestrictedToHours Then
+                If (Math.Floor(time.Days / 365) <> 0) Then
+                    Return $"{(time.Days / 365).ToString("N1")}y {(time.Days / 30).ToString("N1")}m"
                 End If
 
-                If (Math.Floor(timeSpan.Days / 30) <> 0) Then
-                    Return $"{(timeSpan.Days / 30).ToString("N1")}m"
+                If (Math.Floor(time.Days / 30) <> 0) Then
+                    Return $"{(time.Days / 30).ToString("N1")}m"
                 End If
 
-                If timeSpan.Days > 0 Then
-                    If timeSpan.Hours > 0 Then
-                        Return timeSpan.ToString("d\d\ h\h")
+                If time.Days > 0 Then
+                    If time.Hours > 0 Then
+                        Return time.ToString("d\d\ h\h")
                     Else
-                        Return timeSpan.ToString("d\d")
+                        Return time.ToString("d\d")
                     End If
                 End If
             Else
-                If timeSpan.Days > 0 Then Return $"{timeSpan.TotalHours.ToString("N0")}h"
+                If time.Days > 0 Then Return $"{time.TotalHours.ToString("N0")}h {time.Minutes.ToString}m"
             End If
 
-            If timeSpan.Hours > 0 Then
-                If timeSpan.Minutes > 0 Then
-                    Return timeSpan.ToString("h\h\ m\m")
+            If time.Hours > 0 Then
+                If time.Minutes > 0 Then
+                    Return time.ToString("h\h\ m\m")
                 Else
-                    Return timeSpan.ToString("h\h")
+                    Return time.ToString("h\h")
                 End If
             End If
 
-            If timeSpan.Minutes > 0 Then
-                If timeSpan.Seconds > 0 Then
-                    Return timeSpan.ToString("m\m\ s\s")
+            If time.Minutes > 0 Then
+                If time.Seconds > 0 Then
+                    Return time.ToString("m\m\ s\s")
                 Else
-                    Return timeSpan.ToString("m\m")
+                    Return time.ToString("m\m")
                 End If
             Else
-                Return timeSpan.ToString("s\s")
+                Return time.ToString("s\s")
             End If
         End Function
 
