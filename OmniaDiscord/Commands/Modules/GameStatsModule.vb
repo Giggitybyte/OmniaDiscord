@@ -9,7 +9,7 @@ Imports Overstarch.Enums
 Imports Overstarch.Extensions
 Namespace Commands.Modules
 
-    <Group("gamestats"), Aliases("stats", "gs")>
+    <Group("gamestats"), Aliases("gs")>
     <Description("This command group allows for the retrival of player stats for several popular multiplayer games.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.UseExternalEmojis)>
     Public Class GameStatsModule
@@ -17,7 +17,7 @@ Namespace Commands.Modules
 
         <Command("overwatch"), Aliases("ow")>
         <Description("Retrieves player stats for Overwatch. Valid platforms are PC, PSN, and XBL.")>
-        Public Async Function DisplaySummary(ctx As CommandContext, platform As String, <RemainingText> username As String) As Task
+        Public Async Function OverwatchStats(ctx As CommandContext, platform As String, <RemainingText> username As String) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim owClient As New OverwatchClient
             Dim owPlayer As OverwatchPlayer = Nothing
@@ -70,15 +70,15 @@ Namespace Commands.Modules
                         End If
 
                         .Author = New DiscordEmbedBuilder.EmbedAuthor With {
-                                .Name = $"{owPlayer.Username} - Level {owPlayer.PlayerLevel} - {owPlayer.Platform.ToString}",
-                                .IconUrl = owPlayer.PlayerIconUrl,
-                                .Url = owPlayer.ProfileUrl
-                            }
+                            .Name = $"{owPlayer.Username} - Level {owPlayer.PlayerLevel} - {owPlayer.Platform.ToString}",
+                            .IconUrl = owPlayer.PlayerIconUrl,
+                            .Url = owPlayer.ProfileUrl
+                        }
 
                         .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                                .Text = "Overwatch",
-                                .IconUrl = $"{OmniaConfig.ResourceUrl}/assets/overwatch/logo.png"
-                            }
+                            .Text = "Overwatch",
+                            .IconUrl = $"{OmniaConfig.ResourceUrl}/assets/overwatch/logo.png"
+                        }
 
                         .Color = DiscordColor.SpringGreen
 

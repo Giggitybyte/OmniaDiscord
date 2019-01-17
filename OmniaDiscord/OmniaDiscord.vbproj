@@ -5,6 +5,15 @@
     <RootNamespace>OmniaDiscord</RootNamespace>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <StartupObject>Sub Main</StartupObject>
+    <Version>1.0.0.0</Version>
+    <Authors>thegiggitybyte</Authors>
+    <Company>N/A</Company>
+    <Description>The swiss army knife of Discord bots.</Description>
+    <PackageProjectUrl>https://github.com/Giggitybyte/OmniaDiscord</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/Giggitybyte/OmniaDiscord/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryUrl>https://github.com/Giggitybyte/OmniaDiscord/tree/master</RepositoryUrl>
+    <AssemblyVersion>0.1.0.0</AssemblyVersion>
+    <FileVersion>0.1.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
