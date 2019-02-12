@@ -3,10 +3,8 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
 Imports DSharpPlus.Interactivity
-Imports Microsoft.Extensions.DependencyInjection
 Imports OmniaDiscord.Commands.Checks
-Imports OmniaDiscord.Services
-Imports OmniaDiscord.Services.Entities.Database
+Imports OmniaDiscord.Services.Database.Entities
 
 Namespace Commands.Modules
 
@@ -68,7 +66,7 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function ResetPrefix(ctx As CommandContext) As Task
             Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity
-            Dim conformationCode As String = Core.Utilities.GenerateRandomChars(8)
+            Dim conformationCode As String = Utilities.GenerateRandomChars(8)
             Dim embed As New DiscordEmbedBuilder
 
             With embed

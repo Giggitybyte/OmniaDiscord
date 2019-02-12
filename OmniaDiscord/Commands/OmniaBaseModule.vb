@@ -1,16 +1,14 @@
 ﻿Imports DSharpPlus.CommandsNext
 Imports Microsoft.Extensions.DependencyInjection
-Imports OmniaDiscord.Core
-Imports OmniaDiscord.Core.Bot
-Imports OmniaDiscord.Services
-Imports OmniaDiscord.Services.Entities.Database
+Imports OmniaDiscord.Services.Database
+Imports OmniaDiscord.Services.Database.Entities
 
 Namespace Commands
     Public MustInherit Class OmniaBaseModule
         Inherits BaseCommandModule
 
         Public ReadOnly Property Utilities As Utilities
-        Public ReadOnly Property OmniaConfig As Configuration
+        Public ReadOnly Property OmniaConfig As Bot.Configuration
         Public Property GuildData As GuildData
         Public Property GuildSettings As GuildSettings
         Private _db As DatabaseService
@@ -21,7 +19,7 @@ Namespace Commands
             _GuildData = _db.GetGuildData(ctx.Guild.Id)
             _GuildSettings = _db.GetGuildSettings(ctx.Guild.Id)
             _Utilities = ctx.Client.GetCommandsNext.Services.GetService(Of Utilities)
-            _OmniaConfig = ctx.Client.GetCommandsNext.Services.GetRequiredService(Of Configuration)
+            _OmniaConfig = ctx.Client.GetCommandsNext.Services.GetRequiredService(Of Bot.Configuration)
 
             Return MyBase.BeforeExecutionAsync(ctx)
         End Function

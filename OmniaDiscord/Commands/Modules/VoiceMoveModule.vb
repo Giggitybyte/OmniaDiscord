@@ -5,17 +5,18 @@ Imports DSharpPlus.Entities
 Imports DSharpPlus.Entities.DiscordEmbedBuilder
 Imports DSharpPlus.Interactivity
 Imports OmniaDiscord.Commands.Checks
-Imports OmniaDiscord.Services.Entities.Database
+Imports OmniaDiscord.Services.Database.Entities
 
 Namespace Commands.Modules
 
-    Public Class VoiceChannelMoveModule
+    Public Class VoiceMoveModule
         Inherits BaseCommandModule
 
         <Command("movevoice"), Aliases("move", "vcm"), RequireGuild>
         <Description("Moves users from the voice channel you're currently in to another voice channel. If multiple destination voice channels are found, you'll have the option to choose from up to four of them. Partial voice channel names and channel IDs are accepted.")>
         <RequireBotPermissions(Permissions.SendMessages Or Permissions.EmbedLinks Or Permissions.AddReactions Or Permissions.MoveMembers)>
         <RequireTitle(GuildTitle.Helper)>
+        <Cooldown(1, 5, CooldownBucketType.Guild)>
         Public Async Function MoveToVoiceChannel(ctx As CommandContext, <RemainingText> destination As String) As Task
             Dim embed As New DiscordEmbedBuilder
 

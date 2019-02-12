@@ -1,4 +1,5 @@
-﻿Namespace Services.Entities.Database
+﻿Namespace Services.Database.Entities
+
     Public Class GuildSettings
 
         Public Property Id As Integer ' Database ID.
@@ -9,4 +10,5 @@
         Public Property IsVoteToSkipEnabled As Boolean ' Weather or not a vote is needed to skip an audio track.
 
     End Class
+
 End Namespace

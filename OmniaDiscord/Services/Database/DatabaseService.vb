@@ -1,9 +1,9 @@
 ﻿Imports LiteDB
-Imports OmniaDiscord.Services.Entities.Database
+Imports OmniaDiscord.Services.Database.Entities
 
-Namespace Services
+Namespace Services.Database
+
     Public Class DatabaseService
-
         Private ReadOnly _db As LiteDatabase
         Private ReadOnly _logger As LogService
 
@@ -83,4 +83,5 @@ Namespace Services
         End Function
 
     End Class
+
 End Namespace

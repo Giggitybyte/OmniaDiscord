@@ -1,4 +1,5 @@
-﻿Namespace Services.Entities.Database
+﻿Namespace Services.Database.Entities
+
     Public Class GuildData
 
         Public Property Id As Integer ' Database ID.
@@ -17,4 +18,5 @@
         End Sub
 
     End Class
+
 End Namespace

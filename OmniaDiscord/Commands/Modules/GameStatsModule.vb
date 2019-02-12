@@ -10,13 +10,14 @@ Imports Overstarch.Extensions
 Namespace Commands.Modules
 
     <Group("gamestats"), Aliases("gs")>
-    <Description("This command group allows for the retrival of player stats for several popular multiplayer games.")>
+    <Description("Command group for the retrival of player stats for several popular multiplayer games.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.UseExternalEmojis)>
     Public Class GameStatsModule
         Inherits OmniaBaseModule
 
         <Command("overwatch"), Aliases("ow")>
         <Description("Retrieves player stats for Overwatch. Valid platforms are PC, PSN, and XBL.")>
+        <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function OverwatchStats(ctx As CommandContext, platform As String, <RemainingText> username As String) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim owClient As New OverwatchClient
@@ -101,7 +102,7 @@ Namespace Commands.Modules
                             Dim qpSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
                             Dim qpMedals As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Match Awards", "Medals")?.Value, 0)
 
-                            strBuilder.Append($"Time Played: `{Core.Utilities.FormatTimespan(TimeSpan.FromSeconds(qpTimePlayed))}`{Environment.NewLine}")
+                            strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(qpTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{qpGamesWon.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"K/D Ratio: `{(qpElims / qpDeaths).ToString("N2")}`{Environment.NewLine}")
                             strBuilder.Append($"Eliminations: `{qpElims.ToString("N0")}`{Environment.NewLine}")
@@ -118,7 +119,7 @@ Namespace Commands.Modules
                             Dim compElims As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
                             Dim compSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
 
-                            strBuilder.Append($"Time Played: `{Core.Utilities.FormatTimespan(TimeSpan.FromSeconds(compTimePlayed))}`{Environment.NewLine}")
+                            strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(compTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Played: `{compGamesPlayed.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{compGamesWon.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"K/D Ratio: `{(compElims / compDeaths).ToString("N2")}`{Environment.NewLine}")
@@ -152,7 +153,7 @@ Namespace Commands.Modules
             If sortedStats.Count > 0 Then
                 For Each heroStat In sortedStats
                     Dim heroName As String = heroStat.Hero
-                    Dim playtime As String = Core.Utilities.FormatTimespan(TimeSpan.FromSeconds(heroStat.Value))
+                    Dim playtime As String = Utilities.FormatTimespanToString(TimeSpan.FromSeconds(heroStat.Value))
 
                     strBuilder.Append($"{DiscordEmoji.FromName(client, $":omnia_{heroStat.Hero.ToLower}icon:")}{heroName}: `{playtime}`{Environment.NewLine}")
                 Next
