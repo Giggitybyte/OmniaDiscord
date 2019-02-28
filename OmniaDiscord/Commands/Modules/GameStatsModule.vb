@@ -84,9 +84,9 @@ Namespace Commands.Modules
                         .Color = DiscordColor.SpringGreen
 
                         .Description &= $"Endorsement Level {owPlayer.EndorsementLevel} - "
-                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_shotcaller:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.SHOTCALLER) * 100)}%` "
-                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_teammate:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.GOODTEAMMATE) * 100)}%` "
-                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_sportsmanship:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.SPORTSMANSHIP) * 100)}%`"
+                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_shotcaller:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.Shotcaller) * 100)}%` "
+                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_teammate:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.GoodTeammate) * 100)}%` "
+                        .Description &= $"{DiscordEmoji.FromName(ctx.Client, ":omnia_sportsmanship:")}`{CInt(owPlayer.Endorsements(OverwatchEndorsement.Sportsmanship) * 100)}%`"
 
                         If owPlayer.IsProfilePrivate Then
                             strBuilder.Append($"This player has their profile set to private.{Environment.NewLine}QP and Competitive stats are unavailable for this player.")
@@ -95,12 +95,12 @@ Namespace Commands.Modules
                             .AddField("Private Profile", strBuilder.ToString)
                         Else
 
-                            Dim qpTimePlayed As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Game", "Time Played")?.Value, 0)
-                            Dim qpGamesWon As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Game", "Games Won")?.Value, 0)
-                            Dim qpElims As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
-                            Dim qpDeaths As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Combat", "Deaths")?.Value, 0)
-                            Dim qpSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
-                            Dim qpMedals As Double = If(owPlayer.Stats(OverwatchGamemode.QUICKPLAY).GetStatExact("All Heroes", "Match Awards", "Medals")?.Value, 0)
+                            Dim qpTimePlayed As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Game", "Time Played")?.Value, 0)
+                            Dim qpGamesWon As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Game", "Games Won")?.Value, 0)
+                            Dim qpElims As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
+                            Dim qpDeaths As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Combat", "Deaths")?.Value, 0)
+                            Dim qpSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
+                            Dim qpMedals As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Match Awards", "Medals")?.Value, 0)
 
                             strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(qpTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{qpGamesWon.ToString("N0")}`{Environment.NewLine}")
@@ -112,12 +112,12 @@ Namespace Commands.Modules
                             .AddField("Quick Play", strBuilder.ToString, True)
                             strBuilder.Clear()
 
-                            Dim compTimePlayed As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Game", "Time Played")?.Value, 0)
-                            Dim compGamesPlayed As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Game", "Games Played")?.Value, 0)
-                            Dim compGamesWon As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Game", "Games Won")?.Value, 0)
-                            Dim compDeaths As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Combat", "Deaths")?.Value, 0)
-                            Dim compElims As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
-                            Dim compSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.COMPETITIVE).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
+                            Dim compTimePlayed As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Game", "Time Played")?.Value, 0)
+                            Dim compGamesPlayed As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Game", "Games Played")?.Value, 0)
+                            Dim compGamesWon As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Game", "Games Won")?.Value, 0)
+                            Dim compDeaths As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Combat", "Deaths")?.Value, 0)
+                            Dim compElims As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
+                            Dim compSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
 
                             strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(compTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Played: `{compGamesPlayed.ToString("N0")}`{Environment.NewLine}")
@@ -129,7 +129,7 @@ Namespace Commands.Modules
                             .AddField("Competitive", strBuilder.ToString, True)
                             strBuilder.Clear()
 
-                            If qpTimePlayed > 0 Then FormatOverwatchHeroPlaytime(ctx.Client, owPlayer.Stats(OverwatchGamemode.QUICKPLAY), strBuilder)
+                            If qpTimePlayed > 0 Then FormatOverwatchHeroPlaytime(ctx.Client, owPlayer.Stats(OverwatchGamemode.Quickplay), strBuilder)
                             .AddField("Most Played - QP", If(strBuilder.Length > 0, strBuilder.ToString, "Nobody :("), True)
                             strBuilder.Clear()
 

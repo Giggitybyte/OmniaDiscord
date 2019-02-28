@@ -16,7 +16,7 @@ Imports OmniaDiscord.Services.MediaRetrieval.Entities
 
 Namespace Commands.Modules
 
-    <Group("music"), RequireGuild>
+    <Group("music"), RequireGuild, ModuleLifespan(ModuleLifespan.Transient)>
     <Description("Command group for the playback of music and other audio.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.AddReactions Or Permissions.UseExternalEmojis Or Permissions.UseVoice Or Permissions.Speak)>
     Public Class MediaPlaybackModule
@@ -112,7 +112,13 @@ Namespace Commands.Modules
                     End If
 
                     If guildConnection IsNot Nothing AndAlso guildConnection.IsConnected Then
-                        If _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then Await _lavalink.PlayNextTrackAsync(ctx.Guild)
+                        If _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then
+                            Dim isSuccess As Boolean
+
+                            Do
+                                isSuccess = Await _lavalink.PlayNextTrackAsync(ctx.Guild)
+                            Loop Until isSuccess
+                        End If
                     End If
                 End If
 
@@ -235,7 +241,7 @@ Namespace Commands.Modules
                             skipCount = qCount - 1
 
                         Else
-                            embed.Description = $"Skipped to track number **{trackNumber}**."
+                            embed.Description = $"Skipped to track {trackNumber}."
                             skipCount = trackNumber - 1
                         End If
 
@@ -323,7 +329,7 @@ Namespace Commands.Modules
         <Command("queue"), Aliases("q")>
         <Description("Displays all the tracks currently in the playback queue.")>
         Public Async Function DisplayQueueCommand(ctx As CommandContext) As Task
-            Dim playbackQueue As List(Of OmniaMediaInfo) = _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.ToList
+            Dim playbackQueue As ConcurrentQueue(Of OmniaMediaInfo) = _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue
 
             If playbackQueue.Count = 0 Then
                 Dim embed As New DiscordEmbedBuilder With {
@@ -351,7 +357,15 @@ Namespace Commands.Modules
 
                 pages = strBuilder.ToString.SplitAtOccurence(Environment.NewLine, 20)
 
+                For page As Integer = 1 To pages.Count
+                    pages(page - 1) = $"Queued Tracks{Environment.NewLine}============={Environment.NewLine}{pages(page - 1).Trim}"
+                Next
+
                 If pages.Count > 1 Then
+                    For page As Integer = 1 To pages.Count
+                        pages(page - 1) &= $"{Environment.NewLine}{Environment.NewLine}Page {page} of {pages.Count}"
+                    Next
+
                     Await DoQueuePaginationAsync(ctx, pages, 30000)
                 Else
                     Await ctx.RespondAsync(Formatter.BlockCode(pages.First, "markdown"))
@@ -452,11 +466,6 @@ Namespace Commands.Modules
         End Function
 
         Private Async Function DoQueuePaginationAsync(ctx As CommandContext, pages As List(Of String), timeout As Integer) As Task
-            For page As Integer = 1 To pages.Count
-                Dim index As Integer = page - 1
-                pages(index) = $"Page {page.ToString("N0")}{Environment.NewLine}============={Environment.NewLine}{pages(index).Trim}"
-            Next
-
             Dim tsc As New TaskCompletionSource(Of String)
             Dim ct As New CancellationTokenSource(timeout)
             ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
@@ -475,25 +484,26 @@ Namespace Commands.Modules
                                       ct = New CancellationTokenSource(timeout)
                                       ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
 
-                                      If emoji = emojis.SkipLeft AndAlso pageNumber > 1 Then
-                                          pageNumber = 1
 
-                                      ElseIf emoji = emojis.Left AndAlso pageNumber <> 1 Then
-                                          pageNumber -= 1
+                                      Select Case emoji
+                                          Case emojis.SkipLeft
+                                              pageNumber = 1
 
-                                      ElseIf emoji = emojis.[Stop] Then
-                                          ct.Cancel()
+                                          Case emojis.Left
+                                              If pageNumber <> 1 Then pageNumber -= 1
 
-                                      ElseIf emoji = emojis.Right Then
-                                          If pageNumber <> pages.Count Then pageNumber += 1
+                                          Case emojis.Stop
+                                              ct.Cancel()
 
-                                      ElseIf emoji = emojis.SkipRight Then
-                                          pageNumber = pages.Count
+                                          Case emojis.Right
+                                              If pageNumber <> pages.Count Then pageNumber += 1
 
-                                      Else
-                                          Return
+                                          Case emojis.SkipRight
+                                              pageNumber = pages.Count
 
-                                      End If
+                                          Case Else
+                                              Return
+                                      End Select
 
                                   Else
                                       Return
@@ -503,7 +513,9 @@ Namespace Commands.Modules
                                   Await ctx.Client.GetInteractivity.GeneratePaginationReactions(message, New PaginationEmojis(ctx.Client))
                               End If
 
-                              If ct.IsCancellationRequested = False Then Await message.ModifyAsync(Formatter.BlockCode(pages(pageNumber - 1), "markdown"))
+                              If ct.IsCancellationRequested = False Then
+                                  Await message.ModifyAsync(Formatter.BlockCode(pages(pageNumber - 1), "markdown"))
+                              End If
                           End Function
 
             Try
@@ -526,7 +538,7 @@ Namespace Commands.Modules
             Await message.DeleteAllReactionsAsync
         End Function
 
-        <Group("test"), RequireOwner>
+        <Group("test"), RequireOwner, ModuleLifespan(ModuleLifespan.Transient)>
         <Description("Command group containing subcommands to test specific parts of Lavalink playback.")>
         Public Class DebugModule
             Inherits BaseCommandModule

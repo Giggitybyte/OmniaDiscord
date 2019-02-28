@@ -10,7 +10,7 @@ Imports OmniaDiscord.Services.Lavalink.Entities
 Namespace Services.Lavalink
 
     Public Class LavalinkService
-        Private WithEvents _nodeConnection As LavalinkNodeConnection
+        Private _nodeConnection As LavalinkNodeConnection
         Private _logger As LogService
         Private _omniaConfig As Bot.Configuration
 
@@ -22,26 +22,40 @@ Namespace Services.Lavalink
             End Get
         End Property
 
-        Sub New(client As DiscordShardedClient, config As Bot.Configuration, logger As LogService)
-            AddHandler client.Ready, AddressOf InitLavalinkNode
-            AddHandler client.GuildAvailable, AddressOf DiscordGuildAvailableHandler
+        Sub New(shardedClient As DiscordShardedClient, config As Bot.Configuration, logger As LogService)
+            AddHandler shardedClient.GuildAvailable, AddressOf DiscordGuildAvailableHandler
 
             _omniaConfig = config
             _logger = logger
 
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
+            InitLavalinkNode(shardedClient.ShardClients(0)).GetAwaiter.GetResult()
+
+            For shard As Integer = 0 To shardedClient.ShardClients.Count - 1
+                Dim client As DiscordClient = shardedClient.ShardClients(shard)
+
+                For Each guild In client.Guilds.Keys
+                    If _GuildInfo.ContainsKey(guild) = False Then _GuildInfo.TryAdd(guild, New GuildPlaybackInfo)
+                Next
+            Next
         End Sub
 
-        Private Async Function InitLavalinkNode(args As ReadyEventArgs) As Task
+        Private Async Function InitLavalinkNode(client As DiscordClient) As Task
             If _nodeConnection Is Nothing Then
-                Dim euConfig As New LavalinkConfiguration With {
+                Dim lavaConfig As New LavalinkConfiguration With {
                     .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
                     .RestEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
                     .Password = _omniaConfig.LavalinkPasscode
                 }
 
-                Dim lavalink As LavalinkExtension = args.Client.GetLavalink
-                _nodeConnection = Await lavalink.ConnectAsync(euConfig)
+                Dim lavalink As LavalinkExtension = client.GetLavalink
+                _nodeConnection = Await lavalink.ConnectAsync(lavaConfig)
+
+                AddHandler _nodeConnection.PlaybackFinished, AddressOf PlaybackFinishedHandler
+                AddHandler _nodeConnection.TrackException, AddressOf TrackExceptionHandler
+                AddHandler _nodeConnection.TrackStuck, AddressOf TrackStuckHandler
+                AddHandler _nodeConnection.Disconnected, AddressOf DisconnectedHandler
+                AddHandler _nodeConnection.LavalinkSocketErrored, AddressOf LavalinkSocketErroredHandler
             End If
         End Function
 
@@ -54,6 +68,7 @@ Namespace Services.Lavalink
                 If lavaRequest.LoadResultType = LavalinkLoadResultType.LoadFailed Then
                     Await _logger.PrintAsync(LogLevel.Warning, "Lavalink", $"Unable load URL: { _GuildInfo(guild.Id).CurrentTrack.DirectUrl} (Guild: {guild.Id})")
 
+
                 Else
                     _nodeConnection.GetConnection(guild)?.Play(lavaRequest.Tracks.First)
                     _GuildInfo(guild.Id).IsPlaying = True
@@ -65,15 +80,15 @@ Namespace Services.Lavalink
             Return False
         End Function
 
-        Private Async Function DisconnectedHandler(e As NodeDisconnectedEventArgs) As Task Handles _nodeConnection.Disconnected
+        Private Async Function DisconnectedHandler(e As NodeDisconnectedEventArgs) As Task
             Await _logger.PrintAsync(LogLevel.Warning, "Lavalink Service", "Luke implement auto reconnect you fuck.")
         End Function
 
-        Private Async Function LavalinkSocketErroredHandler(e As SocketErrorEventArgs) As Task Handles _nodeConnection.LavalinkSocketErrored
+        Private Async Function LavalinkSocketErroredHandler(e As SocketErrorEventArgs) As Task
             Await _logger.PrintAsync(LogLevel.Error, "Lavalink Service", $"Socket error: {e.Exception.Message}")
         End Function
 
-        Private Async Function PlaybackFinishedHandler(e As TrackFinishEventArgs) As Task Handles _nodeConnection.PlaybackFinished
+        Private Async Function PlaybackFinishedHandler(e As TrackFinishEventArgs) As Task
             Dim guild As DiscordGuild = e.Player.Guild
 
             Await _logger.PrintAsync(LogLevel.Debug, "Lavalink Service", $"Track ended playback in {guild.Id}. Reason: {e.Reason}.")
@@ -99,13 +114,14 @@ Namespace Services.Lavalink
 
                 End If
             End If
+
         End Function
 
-        Private Async Function TrackExceptionHandler(e As TrackExceptionEventArgs) As Task Handles _nodeConnection.TrackException
+        Private Async Function TrackExceptionHandler(e As TrackExceptionEventArgs) As Task
             Await _logger.PrintAsync(LogLevel.Error, "Lavalink Service", $"Track errored in {e.Player.Guild.Id}: {e.Error}")
         End Function
 
-        Private Async Function TrackStuckHandler(e As TrackStuckEventArgs) As Task Handles _nodeConnection.TrackStuck
+        Private Async Function TrackStuckHandler(e As TrackStuckEventArgs) As Task
             Await _logger.PrintAsync(LogLevel.Warning, "Lavalink Service", $"Track got stuck in {e.Player.Guild.Id}. Threshold: {e.ThresholdMilliseconds}ms")
         End Function
 
