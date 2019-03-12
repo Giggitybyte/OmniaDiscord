@@ -17,6 +17,7 @@ Namespace Services.MediaRetrieval
         Private _omniaConfig As Bot.Configuration
         Private _bandcampRegex As Regex
         Private _clypRegex As Regex
+        Private _discordRegex As Regex
         Private _instagramRegex As Regex
         Private _soundcloudRegex As Regex
         Private _spotifyRegex As Regex
@@ -30,6 +31,7 @@ Namespace Services.MediaRetrieval
 
             _bandcampRegex = New Regex("https?:\/\/[a-z0-9\\-]+?\.bandcamp\.com\/album|track\/[a-z0-9\-]+?\/?", RegexOptions.Compiled)
             _clypRegex = New Regex("https?:\/\/clyp.it\/\w{8}", RegexOptions.Compiled)
+            _discordRegex = New Regex("https?:\/\/cdn\.discordapp\.com\/attachments\/\w{18}\/\w{18}\/", RegexOptions.Compiled)
             _instagramRegex = New Regex("(https?:\/\/(www\.)?)?instagram\.com(\/p\/\w+\/?)", RegexOptions.Compiled)
             _soundcloudRegex = New Regex("(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+\/?", RegexOptions.Compiled)
             _spotifyRegex = New Regex("(https?:\/\/open.spotify.com\/(track|user|artist|album)\/[a-zA-Z0-9]+(\/playlist\/[a-zA-Z0-9]+|)|spotify:(track|user|artist|album):[a-zA-Z0-9]+(:playlist:[a-zA-Z0-9]+|))", RegexOptions.Compiled)
@@ -74,7 +76,7 @@ Namespace Services.MediaRetrieval
         End Function
 
         Private Async Function ResolveSoundcloudAsync(url As String) As Task(Of OmniaMediaInfo)
-            Dim rawJson As String = Await _webClient.DownloadStringTaskAsync($"http://api.soundcloud.com/resolve?url={url}&client_id={_omniaConfig.SoundcloudClientId}")
+            Dim rawJson As String = Await _webClient.DownloadStringTaskAsync($"http://api.soundcloud.com/resolve?url={url}&representation=full&client_id={_omniaConfig.SoundcloudClientId}")
             Dim jsonObject As JObject = JObject.Parse(rawJson)
             Dim mediaKind As String = jsonObject.Value(Of String)("kind")
             Dim mediaInfo As New OmniaMediaInfo

@@ -128,6 +128,33 @@ Namespace Commands.Modules
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
+        <Command("upload")>
+        <Description("Queue music, videos, and other audio for playback from a file attachment.")>
+        Public Async Function UploadCommand(ctx As CommandContext) As Task
+            Dim embed As New DiscordEmbedBuilder
+            Dim validExtensions As String() = {
+                ".mp3",
+                ".wav",
+                ".flac",
+                ".ogg",
+                ".mp4",
+                ".webm"
+            }
+
+            If ctx.Message.Attachments.Count = 0 Then
+                With embed
+                    .Color = DiscordColor.Red
+                    .Description = $"Nothing to queue; there was nothing uploaded along with your command."
+                End With
+
+            Else
+                Await PlayCommand(ctx, ctx.Message.Attachments.FirstOrDefault.Url)
+
+            End If
+
+            Await ctx.RespondAsync(embed:=embed.Build)
+        End Function
+
         <Command("stop"), Aliases("die", "leave")>
         <Description("Removes all tracks from the queue and leaves the voice channel.")>
         Public Async Function StopCommand(ctx As CommandContext) As Task
@@ -189,7 +216,7 @@ Namespace Commands.Modules
                 If playbackInfo?.IsPlaying = False Then
                     With embed
                         .Color = DiscordColor.SpringGreen
-                        .Description = $"{DiscordEmoji.FromName(ctx.Client, ":ok_hand:")} Playback resumed."
+                        .Description = "Playback resumed."
                     End With
 
                     _lavalink.Node.GetConnection(ctx.Guild).Resume()
@@ -231,17 +258,17 @@ Namespace Commands.Modules
 
                 If trackNumber > 0 Then
                     If trackNumber = 1 Then
-                        embed.Description = "Skipped current track."
+                        embed.Description = "Skipping current track."
 
                     Else
                         Dim skipCount As Integer
 
                         If trackNumber > qCount Then
-                            embed.Description = "Skipped to last track."
+                            embed.Description = "Skipping to last track."
                             skipCount = qCount - 1
 
                         Else
-                            embed.Description = $"Skipped to track {trackNumber}."
+                            embed.Description = $"Skipping to track {trackNumber}."
                             skipCount = trackNumber - 1
                         End If
 
@@ -261,7 +288,7 @@ Namespace Commands.Modules
                                 If isSuccess Then
                                     With embed
                                         .Color = DiscordColor.Yellow
-                                        .Description &= "Skipped to the next playable track instead."
+                                        .Description &= "Skipping to the next playable track instead."
                                     End With
                                 End If
 
