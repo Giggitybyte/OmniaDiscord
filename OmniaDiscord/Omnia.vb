@@ -17,6 +17,7 @@ Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Commands.Checks
 Imports OmniaDiscord.Services
 Imports OmniaDiscord.Entites
+Imports DSharpPlus.CommandsNext.CommandsNextExtension
 
 Public Module Omnia
     Sub Main(args As String())
@@ -139,23 +140,33 @@ Public Class Bot
     Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
 
         If arg.Command IsNot Nothing Then
-            Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
-
-            Dim exception As ChecksFailedException = TryCast(arg.Exception, ChecksFailedException)
             Dim channelPerms As Permissions = arg.Context.Channel.PermissionsFor(arg.Context.Guild.CurrentMember)
             Dim builder As New StringBuilder
 
             If channelPerms.HasPermission(Permissions.SendMessages) Then
-                If exception IsNot Nothing Then
+
+                If arg.Exception.Message.Contains("No matching subcommands were found") Or
+                    arg.Exception.Message.Contains("Could not find a suitable overload") Then
+
+                    Dim cnext As CommandsNextExtension = arg.Context.Client.GetCommandsNext
+                    Dim cmd As Command = cnext.FindCommand("help", arg.Command.QualifiedName)
+                    Dim ctx As CommandContext = cnext.CreateContext(arg.Context.Message, arg.Context.Prefix, cmd, arg.Command.QualifiedName)
+
+                    Await cmd.ExecuteAsync(ctx)
+
+                ElseIf TryCast(arg.Exception, ChecksFailedException) IsNot Nothing Then
+                    Dim exception As ChecksFailedException = TryCast(arg.Exception, ChecksFailedException)
 
                     For Each failedCheck As CheckBaseAttribute In exception.FailedChecks
                         If TryCast(failedCheck, RequireBotPermissionsAttribute) IsNot Nothing Then
                             Dim check As RequireBotPermissionsAttribute = CType(failedCheck, RequireBotPermissionsAttribute)
-                            builder.AppendLine($"I don't have the right permissions to execute this command. Required permissions: {check.Permissions.ToPermissionString}.")
+                            builder.AppendLine($"I don't have the right permissions to execute this command.")
+                            builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
 
                         ElseIf TryCast(failedCheck, RequireUserPermissionsAttribute) IsNot Nothing Then
                             Dim check As RequireUserPermissionsAttribute = CType(failedCheck, RequireUserPermissionsAttribute)
-                            builder.AppendLine($"You don't have the right permissions to use this command. Required permissions: {check.Permissions.ToPermissionString}.")
+                            builder.AppendLine($"You don't have the right permissions to use this command.")
+                            builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
 
                         ElseIf TryCast(failedCheck, CooldownAttribute) IsNot Nothing Then
                             Dim check As CooldownAttribute = CType(failedCheck, CooldownAttribute)
@@ -199,11 +210,14 @@ Public Class Bot
                     Next
 
                 Else
-                    builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
-                    builder.AppendLine($"{arg.Exception}")
+                    Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
 
-                    ' TODO: Hastebin stacktrace and attach link to message.
+                    builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
+                    builder.AppendLine($"```{arg.Exception}```")
+
                 End If
+
+                If builder.Length = 0 Then Return
 
                 If channelPerms.HasPermission(Permissions.EmbedLinks) Then
                     Dim embed As New DiscordEmbedBuilder With {
