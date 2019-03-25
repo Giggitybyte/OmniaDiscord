@@ -362,6 +362,7 @@ Namespace Commands.Modules
 
         <Command("queue"), Aliases("q")>
         <Description("Displays all the tracks currently in the playback queue.")>
+        <RequireBotPermissions(Permissions.ManageMessages)>
         <Cooldown(1, 6, CooldownBucketType.Guild)>
         Public Async Function DisplayQueueCommand(ctx As CommandContext) As Task
             Dim playbackQueue As ConcurrentQueue(Of OmniaMediaInfo) = _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue
