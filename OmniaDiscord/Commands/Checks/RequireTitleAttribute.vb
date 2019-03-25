@@ -1,8 +1,8 @@
 ﻿Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports Microsoft.Extensions.DependencyInjection
-Imports OmniaDiscord.Services.Database
-Imports OmniaDiscord.Services.Database.Entities
+Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Services
 
 Namespace Commands.Checks
 

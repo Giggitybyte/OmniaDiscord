@@ -1,7 +1,7 @@
 ﻿Imports System.Collections.Concurrent
-Imports OmniaDiscord.Services.MediaRetrieval.Entities
+Imports OmniaDiscord.Entites
 
-Namespace Services.Lavalink.Entities
+Namespace Entites
 
     Public Class GuildPlaybackInfo
         Public Property CurrentTrack As OmniaMediaInfo

@@ -5,9 +5,9 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Lavalink
 Imports DSharpPlus.Lavalink.EventArgs
 Imports DSharpPlus.Net
-Imports OmniaDiscord.Services.Lavalink.Entities
+Imports OmniaDiscord.Entites
 
-Namespace Services.Lavalink
+Namespace Services
 
     Public Class LavalinkService
         Private _nodeConnection As LavalinkNodeConnection

@@ -1,7 +1,7 @@
 ﻿Imports DSharpPlus.CommandsNext
 Imports Microsoft.Extensions.DependencyInjection
-Imports OmniaDiscord.Services.Database
-Imports OmniaDiscord.Services.Database.Entities
+Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Services
 
 Namespace Commands
     Public MustInherit Class OmniaBaseModule

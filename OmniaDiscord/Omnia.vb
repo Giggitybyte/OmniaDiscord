@@ -16,10 +16,7 @@ Imports Newtonsoft.Json
 Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Commands.Checks
 Imports OmniaDiscord.Services
-Imports OmniaDiscord.Services.Database
-Imports OmniaDiscord.Services.Database.Entities
-Imports OmniaDiscord.Services.Lavalink
-Imports OmniaDiscord.Services.MediaRetrieval
+Imports OmniaDiscord.Entites
 
 Public Module Omnia
     Sub Main(args As String())
@@ -202,13 +199,10 @@ Public Class Bot
                     Next
 
                 Else
-                    builder.AppendLine($"**Something went wrong while running** `{arg.Command.QualifiedName}`")
-                    builder.AppendLine($"Exception: {arg.Exception}")
+                    builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
+                    builder.AppendLine($"{arg.Exception}")
 
-                    If Not String.IsNullOrEmpty(arg.Exception.StackTrace) Then
-                        builder.AppendLine($"Stacktrace: ```{arg.Exception.StackTrace}```")
-                    End If
-
+                    ' TODO: Hastebin stacktrace and attach link to message.
                 End If
 
                 If channelPerms.HasPermission(Permissions.EmbedLinks) Then

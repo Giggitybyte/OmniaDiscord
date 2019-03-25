@@ -1,4 +1,4 @@
-﻿Namespace Services.Database.Entities
+﻿Namespace Entites
 
     Public Class GuildSettings
 

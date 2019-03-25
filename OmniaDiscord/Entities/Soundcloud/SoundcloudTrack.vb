@@ -1,7 +1,7 @@
 ﻿Imports System.Net
 Imports Newtonsoft.Json
 
-Namespace Services.MediaRetrieval.Entities.Soundcloud
+Namespace Entites.Soundcloud
 
     Public Class SoundcloudTrack
 

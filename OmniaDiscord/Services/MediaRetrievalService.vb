@@ -2,14 +2,14 @@
 Imports System.Text.RegularExpressions
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
-Imports OmniaDiscord.Services.MediaRetrieval.Entities
-Imports OmniaDiscord.Services.MediaRetrieval.Entities.Bandcamp
-Imports OmniaDiscord.Services.MediaRetrieval.Entities.Instagram
-Imports OmniaDiscord.Services.MediaRetrieval.Entities.Soundcloud
+Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Entites.Bandcamp
+Imports OmniaDiscord.Entites.Instagram
+Imports OmniaDiscord.Entites.Soundcloud
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
 
-Namespace Services.MediaRetrieval
+Namespace Services
 
     Public Class MediaRetrievalService
         Private _webClient As WebClient
@@ -198,7 +198,7 @@ Namespace Services.MediaRetrieval
                 End If
             End If
 
-            Return mediainfo
+            Return mediaInfo
         End Function
 
         Private Async Function ResolveInstagramAsync(url As String) As Task(Of OmniaMediaInfo)

@@ -9,10 +9,8 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports OmniaDiscord.Extensions
-Imports OmniaDiscord.Services.Lavalink
-Imports OmniaDiscord.Services.Lavalink.Entities
-Imports OmniaDiscord.Services.MediaRetrieval
-Imports OmniaDiscord.Services.MediaRetrieval.Entities
+Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Services
 
 Namespace Commands.Modules
 

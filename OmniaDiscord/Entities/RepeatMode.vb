@@ -1,4 +1,4 @@
-﻿Namespace Services.Lavalink.Entities
+﻿Namespace Entites
 
     Public Enum TrackRepeatMode
         Off

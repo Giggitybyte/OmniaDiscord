@@ -3,7 +3,7 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
 Imports OmniaDiscord.Commands.Checks
-Imports OmniaDiscord.Services.Database.Entities
+Imports OmniaDiscord.Entites
 
 Namespace Commands.Modules
 

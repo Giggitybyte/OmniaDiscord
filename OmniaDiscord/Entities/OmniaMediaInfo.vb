@@ -1,4 +1,4 @@
-﻿Namespace Services.MediaRetrieval.Entities
+﻿Namespace Entites
 
     Public Class OmniaMediaInfo
 
