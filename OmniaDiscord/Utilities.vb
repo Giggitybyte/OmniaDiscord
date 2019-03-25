@@ -99,7 +99,7 @@ Public Class Utilities
                 Return time.ToString("m\m")
             End If
         Else
-            Return time.ToString("s\s")
+            Return time.ToString("s\.f\s")
         End If
     End Function
 

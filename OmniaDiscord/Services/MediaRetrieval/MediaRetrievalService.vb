@@ -280,7 +280,7 @@ Namespace Services.MediaRetrieval
                 .DirectUrl = scTrack.Url
                 .Duration = TimeSpan.FromMilliseconds(scTrack.Duration)
                 .Origin = "Soundcloud"
-                .ThumbnailUrl = scTrack.ArtworkUrl
+                .ThumbnailUrl = If(scTrack.ArtworkUrl, $"{_omniaConfig.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png")
                 .Title = scTrack.Title
                 .Type = OmniaMediaType.Track
                 .Url = scTrack.Url

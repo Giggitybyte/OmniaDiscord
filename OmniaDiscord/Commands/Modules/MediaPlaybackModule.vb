@@ -30,8 +30,10 @@ Namespace Commands.Modules
             _lavalink = lavalink
         End Sub
 
+#Region "Command Methods"
         <Command("play"), Aliases("p")>
         <Description("Queue music and other audio for playback from a url.")>
+        <Cooldown(3, 15, CooldownBucketType.User)>
         Public Async Function PlayCommand(ctx As CommandContext, url As String) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim mbrChannel As DiscordChannel = ctx.Member.VoiceState?.Channel
@@ -64,63 +66,7 @@ Namespace Commands.Modules
                 Await ctx.TriggerTypingAsync
                 Dim media As OmniaMediaInfo = Await _mediaRetrieval.GetMediaAsync(url)
 
-                If media Is Nothing Then
-                    With embed
-                        .Color = DiscordColor.Red
-                        .Title = "Cannot Retrieve Media"
-                        .Description = "The link you provided was either from an unsupported platform or is inaccessible for me."
-                    End With
-
-                Else ' Build embed, join voice channel, queue and play media.
-                    With embed
-                        .Color = DiscordColor.SpringGreen
-                        .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                            .Text = media.Origin
-                        }
-                    End With
-
-                    Dim guildConnection As LavalinkGuildConnection = Await _lavalink.Node.ConnectAsync(mbrChannel)
-
-                    If media.Type = OmniaMediaType.Track Then
-                        media.Requester = ctx.Member.Id
-                        _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(media)
-
-                        With embed
-                            .Title = "Queued Track"
-                            .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}{media.Author}"
-                            .ThumbnailUrl = media.ThumbnailUrl
-
-                            If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{Utilities.FormatTimespanToString(media.Duration)}*"
-                        End With
-
-                    ElseIf media.Type = OmniaMediaType.Album Or media.Type = OmniaMediaType.Playlist Then
-                        For Each track As OmniaMediaInfo In media.Tracks
-                            track.Requester = ctx.Member.Id
-                            _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(track)
-                        Next
-
-                        With embed
-                            .Title = $"Queued {media.Tracks.Count} Tracks"
-
-                            .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}"
-                            .Description &= $"{media.Author}{Environment.NewLine}{Environment.NewLine}"
-                            .Description &= $"Total Playtime: {Utilities.FormatTimespanToString(media.Duration)}"
-
-                            .ThumbnailUrl = media.ThumbnailUrl
-                            .Footer.Text &= $" {media.Type}"
-                        End With
-                    End If
-
-                    If guildConnection IsNot Nothing AndAlso guildConnection.IsConnected Then
-                        If _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then
-                            Dim isSuccess As Boolean
-
-                            Do
-                                isSuccess = Await _lavalink.PlayNextTrackAsync(ctx.Guild)
-                            Loop Until isSuccess
-                        End If
-                    End If
-                End If
+                embed = Await QueueMediaAsync(ctx, media, embed)
 
                 Await waitMessage.DeleteAsync()
             End If
@@ -130,6 +76,7 @@ Namespace Commands.Modules
 
         <Command("upload")>
         <Description("Queue music, videos, and other audio for playback from a file attachment.")>
+        <Cooldown(3, 15, CooldownBucketType.User)>
         Public Async Function UploadCommand(ctx As CommandContext) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim validExtensions As String() = {
@@ -141,18 +88,80 @@ Namespace Commands.Modules
                 ".webm"
             }
 
-            If ctx.Message.Attachments.Count = 0 Then
+            If ctx.Message.Attachments.Count > 0 Then
+                Dim attachments As New List(Of OmniaMediaInfo)
+                Dim media As OmniaMediaInfo = Nothing
+
+                For Each attachment In ctx.Message.Attachments
+                    Dim fileName As String = ctx.Message.Attachments.First.FileName
+                    Dim extIndex As Integer = fileName.LastIndexOf("."c)
+
+                    If extIndex <> -1 AndAlso validExtensions.Contains(fileName.Substring(extIndex).ToLower) Then
+                        Dim info As New OmniaMediaInfo With {
+                            .Author = ctx.Member.Mention,
+                            .DirectUrl = attachment.Url,
+                            .Origin = "File Upload",
+                            .Requester = ctx.Member.Id,
+                            .ThumbnailUrl = "http://thegiggitybyte.me/assets/omnia/MediaDefault.png",
+                            .Title = fileName,
+                            .Type = OmniaMediaType.Track,
+                            .Url = attachment.Url
+                        }
+
+                        attachments.Add(info)
+                    End If
+                Next
+
+                If attachments.Count = 1 Then
+                    media = attachments.First
+
+                ElseIf attachments.Count > 1 Then
+                    media = New OmniaMediaInfo With {
+                        .Author = attachments.First.Author,
+                        .Origin = "Discord",
+                        .Requester = attachments.First.Requester,
+                        .ThumbnailUrl = attachments.First.ThumbnailUrl,
+                        .Title = "File Uploads",
+                        .Tracks = attachments,
+                        .Type = OmniaMediaType.Playlist
+                    }
+
+                Else
+                    With embed
+                        .Color = DiscordColor.Red
+                        .Title = "Invalid File Extenstion"
+                        .Description = $"Valid extensions: {String.Join(", ", validExtensions)}"
+                    End With
+
+                End If
+
+                If media IsNot Nothing Then embed = Await QueueMediaAsync(ctx, media, embed)
+
+            Else
                 With embed
                     .Color = DiscordColor.Red
                     .Description = $"Nothing to queue; there was nothing uploaded along with your command."
                 End With
-
-            Else
-                Await PlayCommand(ctx, ctx.Message.Attachments.FirstOrDefault.Url)
-
             End If
 
             Await ctx.RespondAsync(embed:=embed.Build)
+        End Function
+
+        <Command("search")>
+        <Description("Searches for your query and returns the top five results for you to select and queue. Valid options for the platform parameter are YT and SC.")>
+        <Cooldown(1, 6, CooldownBucketType.User)>
+        Public Async Function SearchCommand(ctx As CommandContext, platform As String, <RemainingText> query As String) As Task
+            Dim embed As DiscordEmbedBuilder
+
+            Select Case platform.ToLower
+                Case "yt", "youtube"
+
+                Case "sc", "soundcloud"
+
+                Case Else
+
+            End Select
+
         End Function
 
         <Command("stop"), Aliases("die", "leave")>
@@ -258,17 +267,17 @@ Namespace Commands.Modules
 
                 If trackNumber > 0 Then
                     If trackNumber = 1 Then
-                        embed.Description = "Skipping current track."
+                        embed.Description = "Skipping current track..."
 
                     Else
                         Dim skipCount As Integer
 
                         If trackNumber > qCount Then
-                            embed.Description = "Skipping to last track."
+                            embed.Description = "Skipping to last track..."
                             skipCount = qCount - 1
 
                         Else
-                            embed.Description = $"Skipping to track {trackNumber}."
+                            embed.Description = $"Skipping to track {trackNumber}..."
                             skipCount = trackNumber - 1
                         End If
 
@@ -355,6 +364,7 @@ Namespace Commands.Modules
 
         <Command("queue"), Aliases("q")>
         <Description("Displays all the tracks currently in the playback queue.")>
+        <Cooldown(1, 6, CooldownBucketType.Guild)>
         Public Async Function DisplayQueueCommand(ctx As CommandContext) As Task
             Dim playbackQueue As ConcurrentQueue(Of OmniaMediaInfo) = _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue
 
@@ -491,6 +501,70 @@ Namespace Commands.Modules
 
             Await ctx.RespondAsync(embed:=embed)
         End Function
+#End Region
+
+#Region "Helper Methods"
+        Private Async Function QueueMediaAsync(ctx As CommandContext, media As OmniaMediaInfo, embed As DiscordEmbedBuilder) As Task(Of DiscordEmbedBuilder)
+            If media Is Nothing Then
+                With embed
+                    .Color = DiscordColor.Red
+                    .Title = "Cannot Retrieve Media"
+                    .Description = "The provided URL was either from an unsupported platform or is inaccessible for me."
+                End With
+
+            Else ' Build embed, join voice channel, queue and play media.
+                With embed
+                    .Color = DiscordColor.SpringGreen
+                    .Footer = New DiscordEmbedBuilder.EmbedFooter With {
+                        .Text = media.Origin
+                    }
+                End With
+
+                Dim guildConnection As LavalinkGuildConnection = Await _lavalink.Node.ConnectAsync(ctx.Member.VoiceState.Channel)
+
+                If media.Type = OmniaMediaType.Track Then
+                    media.Requester = ctx.Member.Id
+                    _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(media)
+
+                    With embed
+                        .Title = "Queued Track"
+                        .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}{media.Author}"
+                        .ThumbnailUrl = media.ThumbnailUrl
+
+                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{Utilities.FormatTimespanToString(media.Duration)}*"
+                    End With
+
+                ElseIf media.Type = OmniaMediaType.Album Or media.Type = OmniaMediaType.Playlist Then
+                    For Each track As OmniaMediaInfo In media.Tracks
+                        track.Requester = ctx.Member.Id
+                        _lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(track)
+                    Next
+
+                    With embed
+                        .Title = $"Queued {media.Tracks.Count} Tracks"
+
+                        .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}"
+                        .Description &= $"{media.Author}{Environment.NewLine}{Environment.NewLine}"
+                        .Description &= $"Total Playtime: {Utilities.FormatTimespanToString(media.Duration)}"
+
+                        .ThumbnailUrl = media.ThumbnailUrl
+                        .Footer.Text &= $" {media.Type}"
+                    End With
+                End If
+
+                If guildConnection IsNot Nothing AndAlso guildConnection.IsConnected Then
+                    If _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then
+                        Dim isSuccess As Boolean
+
+                        Do
+                            isSuccess = Await _lavalink.PlayNextTrackAsync(ctx.Guild)
+                        Loop Until isSuccess
+                    End If
+                End If
+            End If
+
+            Return embed
+        End Function
 
         Private Async Function DoQueuePaginationAsync(ctx As CommandContext, pages As List(Of String), timeout As Integer) As Task
             Dim tsc As New TaskCompletionSource(Of String)
@@ -564,6 +638,7 @@ Namespace Commands.Modules
             ct.Dispose()
             Await message.DeleteAllReactionsAsync
         End Function
+#End Region
 
         <Group("test"), RequireOwner, ModuleLifespan(ModuleLifespan.Transient)>
         <Description("Command group containing subcommands to test specific parts of Lavalink playback.")>

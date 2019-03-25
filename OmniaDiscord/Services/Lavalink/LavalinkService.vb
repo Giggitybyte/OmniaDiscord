@@ -29,7 +29,7 @@ Namespace Services.Lavalink
             _logger = logger
 
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
-            InitLavalinkNode(shardedClient.ShardClients(0)).GetAwaiter.GetResult()
+            InitLavalinkNodeAsync(shardedClient.ShardClients(0)).GetAwaiter.GetResult()
 
             For shard As Integer = 0 To shardedClient.ShardClients.Count - 1
                 Dim client As DiscordClient = shardedClient.ShardClients(shard)
@@ -40,7 +40,7 @@ Namespace Services.Lavalink
             Next
         End Sub
 
-        Private Async Function InitLavalinkNode(client As DiscordClient) As Task
+        Private Async Function InitLavalinkNodeAsync(client As DiscordClient) As Task
             If _nodeConnection Is Nothing Then
                 Dim lavaConfig As New LavalinkConfiguration With {
                     .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
