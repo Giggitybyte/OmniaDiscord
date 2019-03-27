@@ -1,6 +1,10 @@
-﻿Imports System.Security.Cryptography
+﻿Imports System.IO
+Imports System.Net
+Imports System.Security.Cryptography
 Imports System.Text
 Imports DSharpPlus.Entities
+Imports SkiaSharp
+Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
 Public Class Utilities
 
@@ -29,6 +33,35 @@ Public Class Utilities
         Next
 
         Return result.ToString()
+    End Function
+
+    Public Shared Async Function SvgToStreamAsync(svgUrl As String, Optional width As Integer = 512, Optional height As Integer = 512) As Task(Of Stream)
+        Dim svg As SKSvg = New SKSvg
+        Dim bitmap As New SKBitmap(width, height)
+        Dim canvas As New SKCanvas(bitmap)
+        Dim svgStream As Stream = New MemoryStream
+        Dim imageStream As Stream = New MemoryStream
+
+        Using wclient As New WebClient
+            svgStream = Await wclient.OpenReadTaskAsync(svgUrl)
+        End Using
+
+        svg.Load(svgStream)
+        svgStream.Dispose()
+
+        Dim svgMaxSize As Single = MathF.Max(svg.Picture.CullRect.Width, svg.Picture.CullRect.Height)
+        Dim canvasMinSize As Single = MathF.Max(width, height)
+        Dim scaleSize As Single = canvasMinSize / svgMaxSize
+
+        canvas.DrawPicture(svg.Picture, SKMatrix.MakeScale(scaleSize, scaleSize))
+
+        imageStream = SKImage.FromBitmap(bitmap).Encode.AsStream
+        imageStream.Position = 0
+
+        bitmap.Dispose()
+        canvas.Dispose()
+
+        Return imageStream
     End Function
 
     ' TODO: actually make this useful.
