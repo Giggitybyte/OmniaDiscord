@@ -178,9 +178,10 @@ Namespace Commands.Modules
                 For index As Integer = 0 To ytResults.Count - 1
                     Dim ytVideo As Video = ytResults(index)
                     Dim title As String = ytVideo.Title
-                    If title.Count > 54 Then title = $"{title.Substring(0, 51)}..."
+                    Dim details As String = $"{ytVideo.Title}{Environment.NewLine}{Environment.NewLine}Uploaded by {ytVideo.Author}"
 
-                    builder.Append($"{emojis(index)} **{Formatter.MaskedUrl(title, New Uri(ytVideo.GetUrl), ytVideo.Author)}**{Environment.NewLine}")
+                    If title.Count > 54 Then title = $"{title.Substring(0, 51)}..."
+                    builder.Append($"{emojis(index)} **{Formatter.MaskedUrl(title, New Uri(ytVideo.GetUrl), details)}**{Environment.NewLine}")
                 Next
 
                 With embed
@@ -242,7 +243,7 @@ Namespace Commands.Modules
         Public Async Function StopCommand(ctx As CommandContext) As Task
             Dim guildConnection As LavalinkGuildConnection = _lavalink.Node.GetConnection(ctx.Guild)
 
-            If ctx.Guild.CurrentMember?.VoiceState IsNot Nothing Or guildConnection?.IsConnected Then
+            If ctx.Guild.CurrentMember?.VoiceState?.Channel IsNot Nothing Or guildConnection?.IsConnected Then
                 guildConnection.Stop()
                 guildConnection.SetVolume(100)
                 guildConnection.ResetEqualizer()
