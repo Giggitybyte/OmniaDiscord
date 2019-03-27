@@ -11,6 +11,8 @@ Imports DSharpPlus.Lavalink
 Imports OmniaDiscord.Extensions
 Imports OmniaDiscord.Entites
 Imports OmniaDiscord.Services
+Imports YoutubeExplode
+Imports YoutubeExplode.Models
 
 Namespace Commands.Modules
 
@@ -64,7 +66,7 @@ Namespace Commands.Modules
                 Await ctx.TriggerTypingAsync
                 Dim media As OmniaMediaInfo = Await _mediaRetrieval.GetMediaAsync(url)
 
-                embed = Await QueueMediaAsync(ctx, media, embed)
+                embed = Await QueueMediaAsync(ctx, media)
 
                 Await waitMessage.DeleteAsync()
             End If
@@ -100,7 +102,7 @@ Namespace Commands.Modules
                             .DirectUrl = attachment.Url,
                             .Origin = "File Upload",
                             .Requester = ctx.Member.Id,
-                            .ThumbnailUrl = "http://thegiggitybyte.me/assets/omnia/MediaDefault.png",
+                            .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/omnia/MediaDefault.png",
                             .Title = fileName,
                             .Type = OmniaMediaType.Track,
                             .Url = attachment.Url
@@ -133,7 +135,7 @@ Namespace Commands.Modules
 
                 End If
 
-                If media IsNot Nothing Then embed = Await QueueMediaAsync(ctx, media, embed)
+                If media IsNot Nothing Then embed = Await QueueMediaAsync(ctx, media)
 
             Else
                 With embed
@@ -146,19 +148,92 @@ Namespace Commands.Modules
         End Function
 
         <Command("search")>
-        <Description("Searches for your query and returns the top five results for you to select and queue. Valid options for the platform parameter are YT and SC.")>
+        <Description("Searches YouTube for your query and returns the top five results for you to select.")>
         <Cooldown(1, 6, CooldownBucketType.User)>
-        Public Async Function SearchCommand(ctx As CommandContext, platform As String, <RemainingText> query As String) As Task
-            Dim embed As DiscordEmbedBuilder
+        Public Async Function SearchCommand(ctx As CommandContext, <RemainingText> query As String) As Task
+            Await ctx.TriggerTypingAsync
 
-            Select Case platform.ToLower
-                Case "yt", "youtube"
+            Dim ytResults As List(Of Video) = Await New YoutubeClient().SearchVideosAsync(query, 1)
+            Dim embed As New DiscordEmbedBuilder
 
-                Case "sc", "soundcloud"
+            If ytResults.Count = 0 Then
+                With embed
+                    .Color = DiscordColor.Red
+                    .Description = $"No videos were found with that query."
+                End With
 
-                Case Else
+                Await ctx.RespondAsync(embed:=embed.Build)
+            Else
+                Dim builder As New StringBuilder
+                Dim emojis As New List(Of DiscordEmoji) From {
+                    DiscordEmoji.FromName(ctx.Client, ":one:"),
+                    DiscordEmoji.FromName(ctx.Client, ":two:"),
+                    DiscordEmoji.FromName(ctx.Client, ":three:"),
+                    DiscordEmoji.FromName(ctx.Client, ":four:"),
+                    DiscordEmoji.FromName(ctx.Client, ":five:")
+                }
 
-            End Select
+                If ytResults.Count > 5 Then ytResults = ytResults.Take(5).ToList
+
+                For index As Integer = 0 To ytResults.Count - 1
+                    Dim ytVideo As Video = ytResults(index)
+                    Dim title As String = ytVideo.Title
+                    If title.Count > 54 Then title = $"{title.Substring(0, 51)}..."
+
+                    builder.Append($"{emojis(index)} **{Formatter.MaskedUrl(title, New Uri(ytVideo.GetUrl), ytVideo.Author)}**{Environment.NewLine}")
+                Next
+
+                With embed
+                    .Color = DiscordColor.Orange
+                    .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/omnia/YouTube.png"
+                    .Title = $"Results for `{query}`"
+                    .Description = builder.ToString.Trim
+                    .Footer = New DiscordEmbedBuilder.EmbedFooter With {
+                        .Text = "React below to select a track!",
+                        .IconUrl = $"{OmniaConfig.ResourceUrl}/assets/omnia/ArrowDown.png"
+                    }
+                End With
+
+                Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
+
+                For index As Integer = 0 To ytResults.Count - 1
+                    Await message.CreateReactionAsync(emojis(index))
+                Next
+
+                Dim predicate = Function(e As DiscordEmoji)
+                                    For Each emoji In emojis
+                                        If e = emoji Then Return True
+                                    Next
+                                    Return False
+                                End Function
+
+                Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity()
+                Dim userReaction As ReactionContext = Await interactivity.WaitForMessageReactionAsync(predicate, message, ctx.User, TimeSpan.FromSeconds(15))
+
+                embed.Footer = Nothing
+
+                If userReaction Is Nothing Then
+                    embed.Color = DiscordColor.Red
+                    Await message?.ModifyAsync(embed:=embed.Build)
+
+                Else
+                    Await ctx.TriggerTypingAsync
+
+                    Dim selectedVideo As Video = ytResults(emojis.IndexOf(userReaction.Emoji))
+                    Dim media As OmniaMediaInfo = Await _mediaRetrieval.GetMediaAsync(selectedVideo.GetUrl)
+
+                    embed.Color = DiscordColor.SpringGreen
+                    Await message?.ModifyAsync(embed:=embed.Build)
+                    embed = Await QueueMediaAsync(ctx, media)
+
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                End If
+
+                For index As Integer = 0 To ytResults.Count - 1
+                    Await message?.DeleteOwnReactionAsync(emojis(index))
+                Next
+            End If
+
 
         End Function
 
@@ -503,7 +578,9 @@ Namespace Commands.Modules
 #End Region
 
 #Region "Helper Methods"
-        Private Async Function QueueMediaAsync(ctx As CommandContext, media As OmniaMediaInfo, embed As DiscordEmbedBuilder) As Task(Of DiscordEmbedBuilder)
+        Private Async Function QueueMediaAsync(ctx As CommandContext, media As OmniaMediaInfo) As Task(Of DiscordEmbedBuilder)
+            Dim embed As New DiscordEmbedBuilder
+
             If media Is Nothing Then
                 With embed
                     .Color = DiscordColor.Red

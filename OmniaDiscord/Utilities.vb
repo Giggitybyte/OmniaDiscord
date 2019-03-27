@@ -65,7 +65,6 @@ Public Class Utilities
     Public Shared Function FormatTimespanToString(time As TimeSpan, Optional notRestrictedToHours As Boolean = False) As String
         If notRestrictedToHours Then
             If (Math.Floor(time.Days / 365) <> 0) Then
-
                 Return $"{(time.Days / 365).ToString("N0")}y {((time.Days Mod 365) / 30).ToString("N0")}m"
             End If
 
@@ -74,32 +73,24 @@ Public Class Utilities
             End If
 
             If time.Days > 0 Then
-                If time.Hours > 0 Then
-                    Return time.ToString("d\d\ h\h")
-                Else
-                    Return time.ToString("d\d")
-                End If
+                If time.Hours > 0 Then Return time.ToString("d\d\ h\h")
+                Return time.ToString("d\d")
             End If
         Else
             If time.Days > 0 Then Return $"{time.TotalHours.ToString("N0")}h {time.Minutes.ToString}m"
         End If
 
         If time.Hours > 0 Then
-            If time.Minutes > 0 Then
-                Return time.ToString("h\h\ m\m")
-            Else
-                Return time.ToString("h\h")
-            End If
+            If time.Minutes > 0 Then Return time.ToString("h\h\ m\m")
+            Return time.ToString("h\h")
         End If
 
         If time.Minutes > 0 Then
-            If time.Seconds > 0 Then
-                Return time.ToString("m\m\ s\s")
-            Else
-                Return time.ToString("m\m")
-            End If
+            If time.Seconds > 0 Then Return time.ToString("m\m\ s\s")
+            Return time.ToString("m\m")
         Else
-            Return time.ToString("s\.f\s")
+            If time.Milliseconds > 0 Then Return time.ToString("s\.f\s")
+            Return time.ToString("s\s")
         End If
     End Function
 

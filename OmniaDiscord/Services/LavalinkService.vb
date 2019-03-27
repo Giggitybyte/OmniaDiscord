@@ -24,11 +24,9 @@ Namespace Services
 
         Sub New(shardedClient As DiscordShardedClient, config As Bot.Configuration, logger As LogService)
             AddHandler shardedClient.GuildAvailable, AddressOf DiscordGuildAvailableHandler
-            AddHandler shardedClient.Ready, AddressOf InitLavalinkNodeAsync
 
             _omniaConfig = config
             _logger = logger
-
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
 
             For shard As Integer = 0 To shardedClient.ShardClients.Count - 1
@@ -38,9 +36,11 @@ Namespace Services
                     If _GuildInfo.ContainsKey(guild) = False Then _GuildInfo.TryAdd(guild, New GuildPlaybackInfo)
                 Next
             Next
+
+            InitLavalinkNode(shardedClient.ShardClients(0))
         End Sub
 
-        Private Async Function InitLavalinkNodeAsync(args As ReadyEventArgs) As Task
+        Private Async Sub InitLavalinkNode(client As DiscordClient)
             If _nodeConnection Is Nothing Then
                 Dim lavaConfig As New LavalinkConfiguration With {
                     .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
@@ -48,7 +48,7 @@ Namespace Services
                     .Password = _omniaConfig.LavalinkPasscode
                 }
 
-                Dim lavalink As LavalinkExtension = args.Client.GetLavalink
+                Dim lavalink As LavalinkExtension = client.GetLavalink
                 _nodeConnection = Await lavalink.ConnectAsync(lavaConfig)
 
                 AddHandler _nodeConnection.PlaybackFinished, AddressOf PlaybackFinishedHandler
@@ -57,7 +57,7 @@ Namespace Services
                 AddHandler _nodeConnection.Disconnected, AddressOf DisconnectedHandler
                 AddHandler _nodeConnection.LavalinkSocketErrored, AddressOf LavalinkSocketErroredHandler
             End If
-        End Function
+        End Sub
 
         Public Async Function PlayNextTrackAsync(guild As DiscordGuild) As Task(Of Boolean)
             _GuildInfo(guild.Id).MediaQueue.TryDequeue(_GuildInfo(guild.Id).CurrentTrack)
