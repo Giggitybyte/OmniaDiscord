@@ -20,6 +20,7 @@ Namespace Commands.Modules
     Public Class GameStatsModule
         Inherits OmniaBaseModule
 
+#Region "Commands"
         <Command("siege"), Aliases("r6s", "r6")>
         <Description("Retrieves player stats for Siege. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
@@ -267,7 +268,9 @@ Namespace Commands.Modules
             Await ctx.RespondAsync(embed:=embed.Build)
 
         End Function
+#End Region
 
+#Region "Helper Methods"
         Private Sub FormatOverwatchHeroPlaytime(client As DiscordClient, stats As List(Of OverwatchStat), ByRef strBuilder As StringBuilder)
             Dim sortedStats As List(Of OverwatchStat) = stats.FilterByName("Time Played").OrderByDescending(Function(s) s.Value).Where(Function(s) s.Hero <> "AllHeroes" AndAlso s.Value <> 0).Take(5).ToList
 
@@ -302,6 +305,7 @@ Namespace Commands.Modules
 
             Return rawjson
         End Function
+#End Region
 
     End Class
 End Namespace

@@ -6,7 +6,6 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.CommandsNext.Exceptions
 Imports DSharpPlus.Entities
-Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports DSharpPlus.VoiceNext
@@ -17,7 +16,6 @@ Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Commands.Checks
 Imports OmniaDiscord.Services
 Imports OmniaDiscord.Entites
-Imports DSharpPlus.CommandsNext.CommandsNextExtension
 
 Public Module Omnia
     Sub Main(args As String())
@@ -74,6 +72,7 @@ Public Class Bot
             .AddSingleton(config)
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
+            .AddSingleton(Of SoftbanService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
             .AddSingleton(Of MediaRetrievalService)
@@ -101,7 +100,13 @@ Public Class Bot
         Next
 
         AddHandler client.DebugLogger.LogMessageReceived, Sub(sender, arg) logger.Print(arg.Level, arg.Application, arg.Message)
-        AddHandler client.GuildCreated, Function(arg) AddNewGuildToDatabase(arg)
+
+        AddHandler client.GuildCreated, Function(arg)
+                                            Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
+                                            If db.DoesContainGuild(arg.Guild.Id) = False Then db.InitializeNewGuild(arg.Guild.Id)
+                                            Return Task.CompletedTask
+                                        End Function
+
         AddHandler client.ClientErrored, Function(arg)
                                              Dim ex As Exception = arg.Exception.InnerException
                                              Return logger.PrintAsync(LogLevel.Error, arg.EventName, $"'{ex.Message}':{Environment.NewLine}{ex.StackTrace}")
@@ -239,13 +244,6 @@ Public Class Bot
 
     Private Async Function CommandExecutedHandler(arg As CommandExecutionEventArgs, logger As LogService) As Task
         Await logger.PrintAsync(LogLevel.Info, "Command Service", $"{arg.Context.User.Username} ({arg.Context.User.Id}) executed '{arg.Command.QualifiedName}' in {arg.Context.Guild.Name} ({arg.Context.Guild.Id})")
-    End Function
-
-    Private Function AddNewGuildToDatabase(arg As GuildCreateEventArgs) As Task
-        Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
-        If db.DoesContainGuild(arg.Guild.Id) = False Then db.InitializeNewGuild(arg.Guild.Id)
-
-        Return Task.CompletedTask
     End Function
 
     Public Class Configuration

@@ -23,7 +23,20 @@ Namespace Services
         End Property
 
         Sub New(shardedClient As DiscordShardedClient, config As Bot.Configuration, logger As LogService)
-            AddHandler shardedClient.GuildAvailable, AddressOf DiscordGuildAvailableHandler
+            AddHandler shardedClient.GuildCreated, Function(args)
+                                                       AddGuildInfo(args.Guild.Id)
+                                                       Return Task.CompletedTask
+                                                   End Function
+
+            AddHandler shardedClient.GuildDeleted, Function(args)
+                                                       If _GuildInfo.TryRemove(args.Guild.Id, Nothing) Then
+                                                           _logger.Print(LogLevel.Debug,
+                                                                         "Lavalink Service",
+                                                                         $"Removed playback information for guild {args.Guild.Id}")
+                                                       End If
+
+                                                       Return Task.CompletedTask
+                                                   End Function
 
             _omniaConfig = config
             _logger = logger
@@ -33,7 +46,7 @@ Namespace Services
                 Dim client As DiscordClient = shardedClient.ShardClients(shard)
 
                 For Each guild In client.Guilds.Keys
-                    If _GuildInfo.ContainsKey(guild) = False Then _GuildInfo.TryAdd(guild, New GuildPlaybackInfo)
+                    AddGuildInfo(guild)
                 Next
             Next
 
@@ -106,7 +119,9 @@ Namespace Services
                         isLoadingSuccessful = Await PlayNextTrackAsync(guild)
 
                         If isLoadingSuccessful Then
-                            Await _logger.PrintAsync(LogLevel.Debug, "Lavalink Service", $"Playing next track for {guild.Id} (Skips: {skipCount})")
+                            Await _logger.PrintAsync(LogLevel.Debug,
+                                                     "Lavalink Service",
+                                                     $"Playing next track for {guild.Id} (Skips: {skipCount})")
                         Else
                             skipCount += 1
                         End If
@@ -125,13 +140,11 @@ Namespace Services
             Await _logger.PrintAsync(LogLevel.Warning, "Lavalink Service", $"Track got stuck in {e.Player.Guild.Id}. Threshold: {e.ThresholdMilliseconds}ms")
         End Function
 
-        Private Function DiscordGuildAvailableHandler(args As GuildCreateEventArgs) As Task
-            If _GuildInfo.ContainsKey(args.Guild.Id) = False Then
-                _GuildInfo.TryAdd(args.Guild.Id, New GuildPlaybackInfo)
+        Public Sub AddGuildInfo(guild As ULong)
+            If Not _GuildInfo.ContainsKey(guild) AndAlso _GuildInfo.TryAdd(guild, New GuildPlaybackInfo) Then
+                _logger.Print(LogLevel.Debug, "Lavalink Service", $"Created playback information for guild {guild}")
             End If
-
-            Return Task.CompletedTask
-        End Function
+        End Sub
     End Class
 
 End Namespace
