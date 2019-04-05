@@ -40,7 +40,7 @@ Namespace Services
         End Sub
 
         Public Async Function GetMediaAsync(url As String) As Task(Of OmniaMediaInfo)
-            Dim mediaInfo As OmniaMediaInfo
+            Dim mediaInfo As OmniaMediaInfo = Nothing
             url = url.Trim
 
             If _youtubeRegex.IsMatch(url) Then

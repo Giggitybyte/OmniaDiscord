@@ -50,7 +50,7 @@ Namespace Commands
                     End If
                 Next
 
-                Dim messageString As String
+                Dim messageString As String = String.Empty
                 If overloadsWithArgs.Count > 0 Then
 
                     For Each overload As CommandOverload In overloadsWithArgs.OrderBy(Function(x) x.Priority)

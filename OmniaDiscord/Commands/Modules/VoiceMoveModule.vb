@@ -44,7 +44,7 @@ Namespace Commands.Modules
                         Dim voiceChannel As DiscordChannel = ctx.Guild.GetChannel(channelId)
                         If voiceChannel IsNot Nothing Then matchingVoiceChannels.Add(voiceChannel)
                     Else
-                        For Each voiceChannel As DiscordChannel In ctx.Guild.Channels.ToList.FindAll(Function(x) x.Type = ChannelType.Voice)
+                        For Each voiceChannel As DiscordChannel In (Await ctx.Guild.GetChannelsAsync).Where(Function(c) c.Type = ChannelType.Voice)
                             If voiceChannel.Name.ToLower.Contains(destination.ToLower) Then matchingVoiceChannels.Add(voiceChannel)
                         Next
                     End If

@@ -13,9 +13,11 @@ Namespace Commands.Modules
         Inherits OmniaBaseModule
 
         Private _softBans As SoftbanService
+        Private _muteService As MuteService
 
-        Sub New(sbService As SoftbanService)
+        Sub New(sbService As SoftbanService, muteService As MuteService)
             _softBans = sbService
+            _muteService = muteService
         End Sub
 
         <Command("kick")>
@@ -82,7 +84,7 @@ Namespace Commands.Modules
 
                     _softBans.BanCancellationTokens.TryAdd(ctx.Guild.Id, cts)
                     Await guild.BanMemberAsync(userId, 0, CreateReason(ctx, embed, targetMember.Value, "soft banned", reason))
-                    Task.Delay(60000, cts.Token).ContinueWith(Sub() guild.UnbanMemberAsync(userId, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
+                    Task.Delay(300000, cts.Token).ContinueWith(Sub() guild.UnbanMemberAsync(userId, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
                 End If
             End If
 
@@ -108,12 +110,81 @@ Namespace Commands.Modules
 
                 Else
                     Dim cts As CancellationTokenSource
-                    If _softBans.BanCancellationTokens.TryRemove(ctx.Guild.Id, cts) Then
-                        cts.Cancel()
-                    End If
+                    If _softBans.BanCancellationTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
                     Await ctx.Guild.UnbanMemberAsync(targetUser.Value, CreateReason(ctx, embed, targetUser.Value, "unbanned", reason))
                 End If
+            End If
+
+            Await ctx.RespondAsync(embed:=embed.Build)
+        End Function
+
+        <Command("mute")>
+        <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
+        <RequireBotPermissions(Permissions.MuteMembers)>
+        <RequireTitle(GuildTitle.Moderator)>
+        Public Async Function MuteCommand(ctx As CommandContext, user As String, <RemainingText> Optional reason As String = "") As Task
+            Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
+            Dim targetMember As [Optional](Of DiscordMember) = Await New DiscordMemberConverter().ConvertAsync(user, ctx)
+
+            If Not targetMember.HasValue Then
+                embed.Description = "The user you specified either is not in this server, or doesn't exist."
+
+            Else
+                GuildData.MutedMembers.Add(targetMember.Value.Id)
+                UpdateGuildData()
+                Await targetMember.Value.SetMuteAsync(True, CreateReason(ctx, embed, targetMember.Value, "muted", reason))
+            End If
+
+            Await ctx.RespondAsync(embed:=embed.Build)
+        End Function
+
+        <Command("unmute")>
+        <Description("Allows a previously muted user to speak and send messages.")>
+        <RequireBotPermissions(Permissions.MuteMembers)>
+        <RequireTitle(GuildTitle.Moderator)>
+        Public Async Function UnmuteCommand(ctx As CommandContext, user As String) As Task
+            Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
+            Dim targetMember As [Optional](Of DiscordMember) = Await New DiscordMemberConverter().ConvertAsync(user, ctx)
+
+            If Not targetMember.HasValue Then
+                embed.Description = "The user you specified either is not in this server, or doesn't exist."
+
+            ElseIf GuildData.MutedMembers.Contains(targetMember.Value.Id) Then
+                GuildData.MutedMembers.Remove(targetMember.Value.Id)
+                UpdateGuildData()
+                Await targetMember.Value.SetMuteAsync(False, CreateReason(ctx, embed, targetMember.Value, "unmuted", String.Empty))
+                Await ctx.TriggerTypingAsync
+
+                With embed
+                    .Color = DiscordColor.Orange
+                    .Description = "Removing channel overwrites..."
+                End With
+
+                Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
+                Dim overwrites As New List(Of DiscordOverwrite)
+                Dim textChannels As IEnumerable(Of DiscordChannel) = (Await ctx.Guild.GetChannelsAsync).Where(Function(c) c.Type = ChannelType.Text)
+
+                For Each channel As DiscordChannel In textChannels
+                    For Each chnOverwrite As DiscordOverwrite In channel.PermissionOverwrites
+
+                        If chnOverwrite.Type = OverwriteType.Member AndAlso
+                           (Await chnOverwrite.GetMemberAsync).Id = targetMember.Value.Id Then
+
+                            overwrites.Add(chnOverwrite)
+                        End If
+
+                    Next
+                Next
+
+                For Each overwrite As DiscordOverwrite In overwrites
+                    Await overwrite.DeleteAsync
+                Next
+
+                Await message.DeleteAsync
+
+            Else
+                embed.Description = "The user you specified is not currently muted."
             End If
 
             Await ctx.RespondAsync(embed:=embed.Build)

@@ -72,6 +72,7 @@ Public Class Bot
             .AddSingleton(config)
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
+            .AddSingleton(Of MuteService)
             .AddSingleton(Of SoftbanService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)

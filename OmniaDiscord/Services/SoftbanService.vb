@@ -4,7 +4,8 @@ Imports System.Threading
 Namespace Services
     Public Class SoftbanService
 
-        ' The best service.
+        ' I could have just passed in New ConcurrentDictionary(Of ..., ...)
+        ' into the service collection, but that's fucking lame.
         Public Property BanCancellationTokens As ConcurrentDictionary(Of ULong, CancellationTokenSource)
 
         Sub New()
