@@ -23,7 +23,7 @@
     <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00586" />
     <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00586" />
     <PackageReference Include="FluentCommandLineParser.NETStandard" Version="1.5.0.31-commands" />
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.38.0.1488" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.38.2.1488" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Overstarch" Version="1.1.0" />
     <PackageReference Include="SkiaSharp" Version="1.68.0" />

@@ -18,7 +18,7 @@ Namespace Commands.Modules
     <Description("Command group for the retrival of player stats for several popular multiplayer games.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.UseExternalEmojis)>
     Public Class GameStatsModule
-        Inherits OmniaBaseModule
+        Inherits OmniaCommandBase
 
 #Region "Commands"
         <Command("siege"), Aliases("r6s", "r6")>

@@ -4,7 +4,7 @@ Imports OmniaDiscord.Entites
 Imports OmniaDiscord.Services
 
 Namespace Commands
-    Public MustInherit Class OmniaBaseModule
+    Public MustInherit Class OmniaCommandBase
         Inherits BaseCommandModule
 
         Public ReadOnly Property OmniaConfig As Bot.Configuration

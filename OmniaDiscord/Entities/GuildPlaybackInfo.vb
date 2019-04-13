@@ -1,5 +1,4 @@
 ﻿Imports System.Collections.Concurrent
-Imports OmniaDiscord.Entites
 
 Namespace Entites
 

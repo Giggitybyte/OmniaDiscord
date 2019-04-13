@@ -14,7 +14,7 @@ Namespace Commands.Modules
     <Description("Display and manage titles for this server.")>
     <RequireBotPermissions(Permissions.SendMessages Or Permissions.EmbedLinks)>
     Public Class TitleModule
-        Inherits OmniaBaseModule
+        Inherits OmniaCommandBase
 
 #Region "Command Methods"
 

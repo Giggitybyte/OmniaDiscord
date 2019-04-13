@@ -20,7 +20,7 @@ Namespace Commands.Modules
     <Description("Command group for the playback of music and other audio.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.AddReactions Or Permissions.UseExternalEmojis Or Permissions.UseVoice Or Permissions.Speak)>
     Public Class MediaPlaybackModule
-        Inherits OmniaBaseModule
+        Inherits OmniaCommandBase
 
         Private _mediaRetrieval As MediaRetrievalService
         Private _lavalink As LavalinkService
