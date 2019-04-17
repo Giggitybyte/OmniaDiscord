@@ -13,6 +13,7 @@ Imports OmniaDiscord.Entites
 Imports OmniaDiscord.Services
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
+Imports DSharpPlus.Interactivity.EventHandling
 
 Namespace Commands.Modules
 
@@ -201,26 +202,29 @@ Namespace Commands.Modules
                     Await message.CreateReactionAsync(emojis(index))
                 Next
 
-                Dim predicate = Function(e As DiscordEmoji)
+                Dim predicate = Function(arg As MessageReactionAddEventArgs)
                                     For Each emoji In emojis
-                                        If e = emoji Then Return True
+                                        If arg.Emoji = emoji Then Return True
                                     Next
                                     Return False
                                 End Function
 
                 Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity()
-                Dim userReaction As ReactionContext = Await interactivity.WaitForMessageReactionAsync(predicate, message, ctx.User, TimeSpan.FromSeconds(15))
+                Dim userReaction As InteractivityResult(Of MessageReactionAddEventArgs) = Await interactivity.WaitForReactionAsync(predicate,
+                                                                                                                                   message,
+                                                                                                                                   ctx.User,
+                                                                                                                                   TimeSpan.FromSeconds(15))
 
                 embed.Footer = Nothing
 
-                If userReaction Is Nothing Then
+                If userReaction.Result Is Nothing Then
                     embed.Color = DiscordColor.Red
                     Await message?.ModifyAsync(embed:=embed.Build)
 
                 Else
                     Await ctx.TriggerTypingAsync
 
-                    Dim selectedVideo As Video = ytResults(emojis.IndexOf(userReaction.Emoji))
+                    Dim selectedVideo As Video = ytResults(emojis.IndexOf(userReaction.Result.Emoji))
                     Dim media As OmniaMediaInfo = Await _mediaRetrieval.GetMediaAsync(selectedVideo.GetUrl)
 
                     embed.Color = DiscordColor.SpringGreen
@@ -650,13 +654,14 @@ Namespace Commands.Modules
 
             Dim pageNumber As Integer = 1
             Dim message As DiscordMessage = Await ctx.RespondAsync(Formatter.BlockCode(pages(pageNumber - 1), "markdown"))
-            Await ctx.Client.GetInteractivity.GeneratePaginationReactions(message, New PaginationEmojis(ctx.Client))
+            Dim emojis As New PaginationEmojis(ctx.Client)
+
+            AddPaginationEmojis(message, emojis)
 
             Dim handler = Async Function(e)
                               If TypeOf e Is MessageReactionAddEventArgs Or TypeOf e Is MessageReactionRemoveEventArgs Then
                                   If e.Message.Id = message.Id AndAlso e.User.Id <> ctx.Client.CurrentUser.Id AndAlso e.User.Id = ctx.Member.Id Then
                                       Dim emoji As DiscordEmoji = DirectCast(e.Emoji, DiscordEmoji)
-                                      Dim emojis As New PaginationEmojis(ctx.Client)
 
                                       ct.Dispose()
                                       ct = New CancellationTokenSource(timeout)
@@ -688,7 +693,7 @@ Namespace Commands.Modules
                                   End If
 
                               ElseIf TypeOf e Is MessageReactionsClearEventArgs Then
-                                  Await ctx.Client.GetInteractivity.GeneratePaginationReactions(message, New PaginationEmojis(ctx.Client))
+                                  AddPaginationEmojis(message, emojis)
                               End If
 
                               If ct.IsCancellationRequested = False Then
@@ -715,6 +720,14 @@ Namespace Commands.Modules
             ct.Dispose()
             Await message.DeleteAllReactionsAsync
         End Function
+
+        Private Async Sub AddPaginationEmojis(message As DiscordMessage, emojis As PaginationEmojis)
+            Await message.CreateReactionAsync(emojis.SkipLeft)
+            Await message.CreateReactionAsync(emojis.Left)
+            Await message.CreateReactionAsync(emojis.Stop)
+            Await message.CreateReactionAsync(emojis.Right)
+            Await message.CreateReactionAsync(emojis.SkipRight)
+        End Sub
 #End Region
 
         <Group("test"), RequireOwner, ModuleLifespan(ModuleLifespan.Transient)>

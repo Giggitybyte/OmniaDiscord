@@ -149,18 +149,17 @@ Namespace Commands.Modules
                 End With
 
                 Dim confirmationMessage As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
-                Dim result As MessageContext = Await interactivity.WaitForMessageAsync(Function(m)
-                                                                                           If m.Author = ctx.Message.Author Then
-                                                                                               Return m.Content.Trim = conformationCode
-                                                                                           End If
+                Dim message As InteractivityResult(Of DiscordMessage) = Await interactivity.WaitForMessageAsync(Function(m)
+                                                                                                                    If m.Author = ctx.Message.Author Then
+                                                                                                                        Return m.Content.Trim = conformationCode
+                                                                                                                    End If
 
-                                                                                           Return False
-
-
-                                                                                       End Function, TimeSpan.FromSeconds(30))
+                                                                                                                    Return False
+                                                                                                                End Function,
+                                                                                                               TimeSpan.FromSeconds(30))
                 Await confirmationMessage.DeleteAsync
 
-                If result.Message Is Nothing Then
+                If message.Result Is Nothing Then
                     With embed
                         .Color = DiscordColor.Orange
                         .Title = "Timed Out"

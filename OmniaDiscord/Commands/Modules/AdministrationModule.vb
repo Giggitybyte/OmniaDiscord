@@ -190,6 +190,20 @@ Namespace Commands.Modules
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
+        <Command("voicekick"), Aliases("vkick")>
+        <Description("Generates a temporary voice channel, moves the target user to that voice channel, then deletes the temporary channel. This effectively force disconnects a user.")>
+        <RequireBotPermissions(Permissions.MoveMembers Or Permissions.ManageChannels)>
+        <RequireTitle(GuildTitle.Admin)>
+        Public Async Function VoiceKickCommand(ctx As CommandContext, user As String) As Task
+            'Dim overwrites As New List(Of DiscordOverwriteBuilder)
+            'overwrites.Add(New DiscordOverwriteBuilder().For(ctx.Guild.EveryoneRole).Deny(Permissions.AccessChannels))
+
+            'Await ctx.Guild.CreateVoiceChannelAsync($"Temporary Channel - {Utilities.GenerateRandomChars(8)}",
+            '                                        overwrites:={New DiscordOverwriteBuilder().For(ctx.Guild.EveryoneRole).Deny(Permissions.AccessChannels)},
+            '                                        user_limit:=1,
+            '                                        reason:=CreateReason(ctx))
+        End Function
+
         Private Function CreateReason(ctx As CommandContext, ByRef embed As DiscordEmbedBuilder,
                                            target As DiscordUser, action As String, reason As String) As String
 

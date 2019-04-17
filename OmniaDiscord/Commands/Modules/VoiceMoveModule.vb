@@ -3,6 +3,7 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
 Imports DSharpPlus.Entities.DiscordEmbedBuilder
+Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports OmniaDiscord.Commands.Checks
 Imports OmniaDiscord.Entites
@@ -101,10 +102,16 @@ Namespace Commands.Modules
                         Next
 
                         Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity()
-                        Dim reactionContext As ReactionContext = Await interactivity.WaitForMessageReactionAsync(Function(e) emojis.Contains(e), message, ctx.User)
+                        Dim reactionContext As InteractivityResult(Of MessageReactionAddEventArgs) = Await interactivity.WaitForReactionAsync(Function(e)
+                                                                                                                                                  If e.User = ctx.User Then
+                                                                                                                                                      Return emojis.Contains(e.Emoji)
+                                                                                                                                                  End If
 
-                        If reactionContext IsNot Nothing Then
-                            Dim resultEmbed As DiscordEmbedBuilder = Await MoveUsersAsync(originChannel, matchingVoiceChannels(emojis.IndexOf(reactionContext.Emoji)))
+                                                                                                                                                  Return False
+                                                                                                                                              End Function)
+
+                        If reactionContext.Result IsNot Nothing Then
+                            Dim resultEmbed As DiscordEmbedBuilder = Await MoveUsersAsync(originChannel, matchingVoiceChannels(emojis.IndexOf(reactionContext.Result.Emoji)))
                             embed = resultEmbed
                         Else
                             With embed

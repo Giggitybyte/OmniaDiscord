@@ -13,7 +13,7 @@ Public Class Utilities
         Return value
     End Function
 
-    Public Shared Function GenerateRandomChars(maxSize As Integer) As String
+    Public Shared Function GenerateRandomChars(length As Integer) As String
         ' https://stackoverflow.com/a/1344255
 
         Dim chars As Char() = New Char(61) {}
@@ -22,11 +22,11 @@ Public Class Utilities
 
         Using crypto As RNGCryptoServiceProvider = New RNGCryptoServiceProvider()
             crypto.GetNonZeroBytes(data)
-            data = New Byte(maxSize - 1) {}
+            data = New Byte(length - 1) {}
             crypto.GetNonZeroBytes(data)
         End Using
 
-        Dim result As StringBuilder = New StringBuilder(maxSize)
+        Dim result As StringBuilder = New StringBuilder(length)
 
         For Each b As Byte In data
             result.Append(chars(b Mod (chars.Length)))
