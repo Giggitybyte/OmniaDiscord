@@ -109,7 +109,6 @@ Namespace Commands.Modules
 
                                                                                                                                                   Return False
                                                                                                                                               End Function)
-
                         If reactionContext.Result IsNot Nothing Then
                             Dim resultEmbed As DiscordEmbedBuilder = Await MoveUsersAsync(originChannel, matchingVoiceChannels(emojis.IndexOf(reactionContext.Result.Emoji)))
                             embed = resultEmbed

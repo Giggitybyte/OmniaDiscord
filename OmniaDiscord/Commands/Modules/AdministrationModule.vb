@@ -195,13 +195,31 @@ Namespace Commands.Modules
         <RequireBotPermissions(Permissions.MoveMembers Or Permissions.ManageChannels)>
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function VoiceKickCommand(ctx As CommandContext, user As String) As Task
-            'Dim overwrites As New List(Of DiscordOverwriteBuilder)
-            'overwrites.Add(New DiscordOverwriteBuilder().For(ctx.Guild.EveryoneRole).Deny(Permissions.AccessChannels))
+            Dim targetMember As [Optional](Of DiscordMember) = Await New DiscordMemberConverter().ConvertAsync(user, ctx)
+            Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
 
-            'Await ctx.Guild.CreateVoiceChannelAsync($"Temporary Channel - {Utilities.GenerateRandomChars(8)}",
-            '                                        overwrites:={New DiscordOverwriteBuilder().For(ctx.Guild.EveryoneRole).Deny(Permissions.AccessChannels)},
-            '                                        user_limit:=1,
-            '                                        reason:=CreateReason(ctx))
+            If Not targetMember.HasValue Then
+                embed.Description = "The user you specified either is not in this server, or doesn't exist."
+
+            ElseIf targetMember.Value.VoiceState?.Channel Is Nothing Then
+                embed.Description = $"{targetMember.Value.Mention} is not currently in a voice channel."
+
+            ElseIf targetMember.Value.Id = ctx.Member.Id Then
+                embed.Description = $"Disconnect yourself from the voice channel, dingus."
+
+            Else
+                Dim auditLogReason As String = $"{ctx.Member.Username}#{ctx.Member.Discriminator} kicked {targetMember.Value.Username}#{targetMember.Value.Discriminator} from {targetMember.Value.VoiceState.Channel.Name}"
+                Dim channel As DiscordChannel = Await ctx.Guild.CreateVoiceChannelAsync($"Temporary Channel - {Utilities.GenerateRandomChars(8)}",
+                                                                                    overwrites:={New DiscordOverwriteBuilder().For(ctx.Guild.EveryoneRole).Deny(Permissions.AccessChannels)},
+                                                                                    user_limit:=1,
+                                                                                    reason:=auditLogReason)
+                Await targetMember.Value.PlaceInAsync(channel)
+                Await channel.DeleteAsync(auditLogReason)
+                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
+            End If
+
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
+
         End Function
 
         Private Function CreateReason(ctx As CommandContext, ByRef embed As DiscordEmbedBuilder,
