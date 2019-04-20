@@ -20,12 +20,14 @@ Namespace Commands.Modules
             With embed
                 .Color = DiscordColor.CornflowerBlue
 
-                Dim userCount As Integer
+                Dim uniqueUsers As New HashSet(Of ULong)
                 For Each guild In ctx.Client.Guilds
-                    userCount += guild.Value.MemberCount
+                    For Each member In guild.Value.Members
+                        uniqueUsers.Add(member.Value.Id)
+                    Next
                 Next
 
-                .AddField("User Count", userCount.ToString("N0"), True)
+                .AddField("User Count", uniqueUsers.Count.ToString("N0"), True)
                 .AddField("Server Count", ctx.Client.Guilds.Count.ToString("N0"), True)
                 .AddField("Shard Count", ctx.Client.ShardCount, True)
                 .AddField("Uptime", Utilities.FormatTimespanToString(Date.Now - Process.GetCurrentProcess().StartTime), True)
