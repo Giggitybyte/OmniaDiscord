@@ -122,7 +122,7 @@ Namespace Commands.Modules
         <Command("mute")>
         <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
         <RequireBotPermissions(Permissions.MuteMembers)>
-        <RequireTitle(GuildTitle.Moderator)>
+        <RequireTitle(GuildTitle.Helper)>
         Public Async Function MuteCommand(ctx As CommandContext, user As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
             Dim targetMember As [Optional](Of DiscordMember) = Await New DiscordMemberConverter().ConvertAsync(user, ctx)

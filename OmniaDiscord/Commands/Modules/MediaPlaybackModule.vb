@@ -493,7 +493,7 @@ Namespace Commands.Modules
         <Command("nowplaying"), Aliases("np", "currenttrack", "current")>
         <Description("Displays all info for the song that is currently playing, including album art and original link.")>
         Public Async Function DisplayCurrentTrack(ctx As CommandContext) As Task
-            Dim embed As New DiscordEmbedBuilder With {.Title = "Currently Playing"}
+            Dim embed As New DiscordEmbedBuilder
             Dim currentTrack As OmniaMediaInfo = _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack
 
             If currentTrack IsNot Nothing Then
@@ -502,6 +502,7 @@ Namespace Commands.Modules
 
                 With embed
                     .Color = DiscordColor.CornflowerBlue
+                    .Title = "Currently Playing"
 
                     .AddField("Title", currentTrack.Title)
                     .AddField("Author", currentTrack.Author, True)
@@ -514,7 +515,7 @@ Namespace Commands.Modules
             Else
                 With embed
                     .Color = DiscordColor.Red
-                    .Description = "Nothing"
+                    .Description = "Nothing is currently playing."
                 End With
             End If
 
