@@ -34,6 +34,7 @@ Namespace Services
         End Sub
 
         Public Function GetGuildData(guildId As ULong) As GuildData
+            If Not DoesContainGuild(guildId) Then InitializeNewGuild(guildId)
             Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
             Dim data As GuildData = guildData.FindOne(Function(d) d.GuildId = guildId)
 
@@ -52,6 +53,7 @@ Namespace Services
         End Sub
 
         Public Function GetGuildSettings(guildId As ULong) As GuildSettings
+            If Not DoesContainGuild(guildId) Then InitializeNewGuild(guildId)
             Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
             Dim settings As GuildSettings = guildSettings.FindOne(Function(s) s.GuildId = guildId)
 
