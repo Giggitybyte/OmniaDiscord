@@ -6,7 +6,7 @@ Imports DSharpPlus.Entities.DiscordEmbedBuilder
 Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports OmniaDiscord.Commands.Checks
-Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Entites.Database
 
 Namespace Commands.Modules
 

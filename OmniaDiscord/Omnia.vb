@@ -14,8 +14,8 @@ Imports Microsoft.Extensions.DependencyInjection
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Commands.Checks
+Imports OmniaDiscord.Entites.Database
 Imports OmniaDiscord.Services
-Imports OmniaDiscord.Entites
 
 Public Module Omnia
     Sub Main(args As String())

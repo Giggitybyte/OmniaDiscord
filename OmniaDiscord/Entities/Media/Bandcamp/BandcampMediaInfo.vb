@@ -1,6 +1,6 @@
 ﻿Imports Newtonsoft.Json
 
-Namespace Entites.Bandcamp
+Namespace Entites.Media.Bandcamp
     Public Class BandcampMediaInfo
 
         <JsonProperty("current")>

@@ -7,7 +7,7 @@ Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
-Imports OmniaDiscord.Entities
+Imports OmniaDiscord.Entities.Gamestats
 Imports Overstarch
 Imports Overstarch.Entities
 Imports Overstarch.Enums

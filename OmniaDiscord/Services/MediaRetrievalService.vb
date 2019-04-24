@@ -2,10 +2,10 @@
 Imports System.Text.RegularExpressions
 Imports Newtonsoft.Json
 Imports Newtonsoft.Json.Linq
-Imports OmniaDiscord.Entites
-Imports OmniaDiscord.Entites.Bandcamp
-Imports OmniaDiscord.Entites.Instagram
-Imports OmniaDiscord.Entites.Soundcloud
+Imports OmniaDiscord.Entites.Media
+Imports OmniaDiscord.Entites.Media.Bandcamp
+Imports OmniaDiscord.Entites.Media.Instagram
+Imports OmniaDiscord.Entites.Media.Soundcloud
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
 

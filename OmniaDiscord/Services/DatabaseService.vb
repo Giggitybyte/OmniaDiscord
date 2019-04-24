@@ -1,5 +1,5 @@
 ﻿Imports LiteDB
-Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Entites.Database
 
 Namespace Services
 

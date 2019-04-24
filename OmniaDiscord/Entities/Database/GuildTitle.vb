@@ -1,4 +1,4 @@
-﻿Namespace Entites
+﻿Namespace Entites.Database
 
     Public Enum GuildTitle
         Admin = 3

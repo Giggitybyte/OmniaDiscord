@@ -1,6 +1,6 @@
 ﻿Imports Newtonsoft.Json
 
-Namespace Entites.Instagram
+Namespace Entites.Media.Instagram
 
     Public Class InstagramMediaInfo
 

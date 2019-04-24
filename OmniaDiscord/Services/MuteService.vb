@@ -1,7 +1,7 @@
 ﻿Imports DSharpPlus
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
-Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Entites.Database
 
 Namespace Services
     Public Class MuteService

@@ -1,4 +1,4 @@
-﻿Namespace Entites
+﻿Namespace Entites.Media
 
     Public Class OmniaMediaInfo
 

@@ -9,11 +9,12 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports OmniaDiscord.Extensions
-Imports OmniaDiscord.Entites
 Imports OmniaDiscord.Services
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
 Imports DSharpPlus.Interactivity.EventHandling
+Imports OmniaDiscord.Entites.Media
+Imports OmniaDiscord.Entites.Database
 
 Namespace Commands.Modules
 

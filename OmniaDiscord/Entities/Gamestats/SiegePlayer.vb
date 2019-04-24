@@ -1,6 +1,6 @@
 ﻿Imports Newtonsoft.Json
 
-Namespace Entities
+Namespace Entities.Gamestats
 
     Public Class SiegePlayer
 

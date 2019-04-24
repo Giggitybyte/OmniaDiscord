@@ -5,7 +5,7 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Lavalink
 Imports DSharpPlus.Lavalink.EventArgs
 Imports DSharpPlus.Net
-Imports OmniaDiscord.Entites
+Imports OmniaDiscord.Entites.Database
 
 Namespace Services
 
@@ -79,8 +79,9 @@ Namespace Services
                 Dim lavaRequest As LavalinkLoadResult = Await _nodeConnection.GetTracksAsync(New Uri(_GuildInfo(guild.Id).CurrentTrack.DirectUrl))
 
                 If lavaRequest.LoadResultType = LavalinkLoadResultType.LoadFailed Then
-                    Await _logger.PrintAsync(LogLevel.Warning, "Lavalink", $"Unable load URL: { _GuildInfo(guild.Id).CurrentTrack.DirectUrl} (Guild: {guild.Id})")
-
+                    Await _logger.PrintAsync(LogLevel.Warning,
+                                             "Lavalink",
+                                             $"Unable load URL: { _GuildInfo(guild.Id).CurrentTrack.DirectUrl} (Guild: {guild.Id})")
 
                 Else
                     _nodeConnection.GetConnection(guild)?.Play(lavaRequest.Tracks.First)
