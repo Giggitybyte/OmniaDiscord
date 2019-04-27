@@ -34,11 +34,12 @@ Namespace Commands.Modules
                 If targetMember.Value.Id = ctx.Member.Id Then
                     embed.Description = "You cannot kick yourself!"
                 Else
-                    Await targetMember.Value.RemoveAsync(CreateReason(ctx, embed, targetMember, "kicked", reason))
+                    Await targetMember.Value.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+                    Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
                 End If
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("ban")>
@@ -55,11 +56,12 @@ Namespace Commands.Modules
                 If targetUser.Value.Id = ctx.Member.Id Then
                     embed.Description = "You cannot ban yourself!"
                 Else
-                    Await ctx.Guild.BanMemberAsync(targetUser.Value.Id, 0, CreateReason(ctx, embed, targetUser, "banned", reason))
+                    Await ctx.Guild.BanMemberAsync($"banned by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+                    Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
                 End If
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("softban"), Aliases("sban")>
@@ -83,12 +85,13 @@ Namespace Commands.Modules
                     Dim cts As New CancellationTokenSource
 
                     _softBans.BanCancellationTokens.TryAdd(ctx.Guild.Id, cts)
-                    Await guild.BanMemberAsync(userId, 0, CreateReason(ctx, embed, targetMember.Value, "soft banned", reason))
+                    Await guild.BanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+                    Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
                     Task.Delay(300000, cts.Token).ContinueWith(Sub() guild.UnbanMemberAsync(userId, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
                 End If
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("unban")>
@@ -112,11 +115,12 @@ Namespace Commands.Modules
                     Dim cts As CancellationTokenSource
                     If _softBans.BanCancellationTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
-                    Await ctx.Guild.UnbanMemberAsync(targetUser.Value, CreateReason(ctx, embed, targetUser.Value, "unbanned", reason))
+                    Await ctx.Guild.UnbanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+                    Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
                 End If
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("mute")>
@@ -133,10 +137,12 @@ Namespace Commands.Modules
             Else
                 GuildData.MutedMembers.Add(targetMember.Value.Id)
                 UpdateGuildData()
-                Await targetMember.Value.SetMuteAsync(True, CreateReason(ctx, embed, targetMember.Value, "muted", reason))
+
+                Await targetMember.Value.SetMuteAsync($"muted by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("unmute")>
@@ -153,7 +159,7 @@ Namespace Commands.Modules
             ElseIf GuildData.MutedMembers.Contains(targetMember.Value.Id) Then
                 GuildData.MutedMembers.Remove(targetMember.Value.Id)
                 UpdateGuildData()
-                Await targetMember.Value.SetMuteAsync(False, CreateReason(ctx, embed, targetMember.Value, "unmuted", String.Empty))
+                Await targetMember.Value.SetMuteAsync($"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator}")
                 Await ctx.TriggerTypingAsync
 
                 With embed
@@ -164,6 +170,8 @@ Namespace Commands.Modules
                 Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
                 Dim overwrites As New List(Of DiscordOverwrite)
                 Dim textChannels As IEnumerable(Of DiscordChannel) = (Await ctx.Guild.GetChannelsAsync).Where(Function(c) c.Type = ChannelType.Text)
+
+                embed.Description = Nothing
 
                 For Each channel As DiscordChannel In textChannels
                     For Each chnOverwrite As DiscordOverwrite In channel.PermissionOverwrites
@@ -182,12 +190,13 @@ Namespace Commands.Modules
                 Next
 
                 Await message.DeleteAsync
+                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Else
                 embed.Description = "The user you specified is not currently muted."
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("voicekick"), Aliases("vkick")>
@@ -220,27 +229,6 @@ Namespace Commands.Modules
 
             If Not String.IsNullOrEmpty(embed.Description) Then Await ctx.RespondAsync(embed:=embed.Build)
 
-        End Function
-
-        Private Function CreateReason(ctx As CommandContext, ByRef embed As DiscordEmbedBuilder,
-                                           target As DiscordUser, action As String, reason As String) As String
-
-            Dim auditLog As String = $"{action} by {ctx.Member.Username}#{ctx.Member.Discriminator}"
-            Dim response As String = $"{target.Mention} was {action} by {ctx.Member.Mention}"
-
-            reason = reason.Trim
-
-            If reason.Length > 0 Then
-                auditLog &= $": '{reason.Substring(0, If(reason.Length > 448, 448, reason.Length))}'"
-                response &= $" with reason{Environment.NewLine}{Formatter.BlockCode(reason)}"
-            End If
-
-            With embed
-                .Description = response
-                .Color = DiscordColor.CornflowerBlue
-            End With
-
-            Return auditLog
         End Function
 
         <Group("prune"), Aliases("purge", "remove")>

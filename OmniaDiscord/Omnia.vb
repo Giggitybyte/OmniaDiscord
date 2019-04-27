@@ -8,7 +8,6 @@ Imports DSharpPlus.CommandsNext.Exceptions
 Imports DSharpPlus.Entities
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
-Imports DSharpPlus.VoiceNext
 Imports Fclp
 Imports Microsoft.Extensions.DependencyInjection
 Imports Newtonsoft.Json
@@ -65,7 +64,6 @@ Public Class Bot
         Dim discordClient As New DiscordShardedClient(clientConfig)
 
         Await discordClient.UseLavalinkAsync()
-        Await discordClient.UseVoiceNextAsync(New VoiceNextConfiguration With {.EnableIncoming = True})
         Await discordClient.UseInteractivityAsync(New InteractivityConfiguration)
 
         With New ServiceCollection
@@ -76,6 +74,7 @@ Public Class Bot
             .AddSingleton(Of SoftbanService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
+            '.AddSingleton(Of GuildLogService)
             .AddSingleton(Of MediaRetrievalService)
 
             _services = .BuildServiceProvider
@@ -150,17 +149,7 @@ Public Class Bot
             Dim builder As New StringBuilder
 
             If channelPerms.HasPermission(Permissions.SendMessages) Then
-
-                If arg.Exception.Message.Contains("No matching subcommands were found") Or
-                    arg.Exception.Message.Contains("Could not find a suitable overload") Then
-
-                    Dim cnext As CommandsNextExtension = arg.Context.Client.GetCommandsNext
-                    Dim cmd As Command = cnext.FindCommand("help", arg.Command.QualifiedName)
-                    Dim ctx As CommandContext = cnext.CreateContext(arg.Context.Message, arg.Context.Prefix, cmd, arg.Command.QualifiedName)
-
-                    Await cmd.ExecuteAsync(ctx)
-
-                ElseIf TryCast(arg.Exception, ChecksFailedException) IsNot Nothing Then
+                If TryCast(arg.Exception, ChecksFailedException) IsNot Nothing Then
                     Dim exception As ChecksFailedException = TryCast(arg.Exception, ChecksFailedException)
 
                     For Each failedCheck As CheckBaseAttribute In exception.FailedChecks

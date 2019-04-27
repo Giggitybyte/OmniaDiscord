@@ -1,5 +1,7 @@
 ﻿Imports DSharpPlus
+Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
+Imports OmniaDiscord.Entites.Database
 
 Namespace Services
     Public Class GuildLogService
@@ -20,20 +22,20 @@ Namespace Services
             AddHandler _client.VoiceStateUpdated, AddressOf LogVoiceChange
         End Sub
 
-        Public Sub LogMemberKick()
+        Public Sub LogMemberKick(targetUser As ULong, responsibleUser As ULong, reason As String)
 
         End Sub
 
-        Private Function LogMemberBan(arg As GuildBanAddEventArgs) As Task
-            Throw New NotImplementedException()
+        Private Function LogMemberBan(e As GuildBanAddEventArgs) As Task
+            ' FIGURE OUT THE BEST WAY TO TELL COMMAND BANS AND UI BANS APART
         End Function
 
         Public Sub LogMemberBan()
-
+            ' FIGURE OUT THE BEST WAY TO TELL COMMAND BANS AND UI BANS APART
         End Sub
 
-        Private Function LogUserUnban(arg As GuildBanRemoveEventArgs) As Task
-            Throw New NotImplementedException()
+        Private Function LogUserUnban(e As GuildBanRemoveEventArgs) As Task
+
         End Function
 
         Public Sub LogUserUnban()
@@ -41,27 +43,27 @@ Namespace Services
         End Sub
 
         Private Function LogMemberJoin(arg As GuildMemberAddEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
 
         Private Function LogMemberLeave(arg As GuildMemberRemoveEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
 
         Private Function LogMessageDeletion(arg As MessageDeleteEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
 
         Private Function LogMessageEdit(arg As MessageUpdateEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
 
         Private Function LogMemberChange(arg As GuildMemberUpdateEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
 
         Private Function LogVoiceChange(arg As VoiceStateUpdateEventArgs) As Task
-            Throw New NotImplementedException()
+
         End Function
     End Class
 End Namespace

@@ -5,7 +5,7 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Lavalink
 Imports DSharpPlus.Lavalink.EventArgs
 Imports DSharpPlus.Net
-Imports OmniaDiscord.Entites.Database
+Imports OmniaDiscord.Entites.Media
 
 Namespace Services
 
