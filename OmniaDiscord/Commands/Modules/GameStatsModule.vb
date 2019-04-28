@@ -25,116 +25,15 @@ Namespace Commands.Modules
         <Description("Retrieves player stats for Siege. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function RainbowSixSiege(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
-            Dim embed As New DiscordEmbedBuilder
-            Dim validRegions As New Dictionary(Of String, String) From {
-                {"NA", "ncsa"},
-                {"EU", "emea"},
-                {"AS", "apac"}
-            }
-            Dim validPlatforms As New Dictionary(Of String, String) From {
-                {"PC", "uplay"},
-                {"XBL", "xbl"},
-                {"PSN", "psn"}
+            Dim baseUrl As String = "http://r6stats.com/api/stats/"
+            Dim jsonSettings As New JsonSerializerSettings With {
+                .NullValueHandling = NullValueHandling.Ignore,
+                .MissingMemberHandling = MissingMemberHandling.Ignore,
             }
 
-            Await ctx.Channel.TriggerTypingAsync
+            Dim stats As SiegeStats = JsonConvert.DeserializeObject(Of SiegeStats)(GetJson($"{baseUrl}/06458532-d978-4739-8d95-870ea4b7c4d6"), jsonSettings)
+            Dim seaons As SiegeSeasons = JsonConvert.DeserializeObject(Of SiegeSeasons)(GetJson($"{baseUrl}/06458532-d978-4739-8d95-870ea4b7c4d6/seasonal"), jsonSettings)
 
-            If validPlatforms.ContainsKey(platform.ToUpper) = False Then
-                With embed
-                    .Color = DiscordColor.Red
-                    .Title = "Invalid Platform"
-                    .Description = $"The platform you provided was not a valid platform.{Environment.NewLine}Valid platforms: {String.Join(", ", validPlatforms.Keys)}"
-                End With
-
-            ElseIf validRegions.ContainsKey(region.ToUpper) = False Then
-                With embed
-                    .Color = DiscordColor.Red
-                    .Title = "Invalid Region"
-                    .Description = $"The region you provided was not a valid region.{Environment.NewLine}Valid regions: {String.Join(", ", validRegions.Keys)}"
-                End With
-            Else
-                Dim userJson As JObject = JObject.Parse(GetJson($"{OmniaConfig.ResourceUrl}/api/r6/getUser.php?name={username}&platform={validPlatforms(platform.ToUpper)}&region={validRegions(region.ToUpper)}&appcode={OmniaConfig.RainbowSixApiPasscode}"))
-                Dim player As SiegePlayer = JsonConvert.DeserializeObject(Of SiegePlayer)(userJson.First.First.First.First.ToString)
-
-                If player.UbisoftId Is Nothing Then
-                    With embed
-                        .Color = DiscordColor.Red
-                        .Title = "User Not Found"
-                        .Description = $"No user could be found with the input you provided.{Environment.NewLine}Make sure you have the correct username, region, and platform."
-                    End With
-                Else
-                    Dim statsjson As JObject = JObject.Parse(GetJson($"{OmniaConfig.ResourceUrl}/api/r6/getStats.php?name={username}&platform={validPlatforms(platform.ToUpper)}&appcode={OmniaConfig.RainbowSixApiPasscode}"))
-
-                    player.RankedCurrent = JsonConvert.DeserializeObject(Of RankedCurrent)(userJson.First.First.First.First.ToString)
-                    player.RankedOverall = JsonConvert.DeserializeObject(Of RankedOverall)(statsjson.First.First.First.First.ToString)
-                    player.CasualOverall = JsonConvert.DeserializeObject(Of CasualOverall)(statsjson.First.First.First.First.ToString)
-                    player.GeneralStats = JsonConvert.DeserializeObject(Of GeneralStats)(statsjson.First.First.First.First.ToString)
-
-                    With embed
-                        Dim strBuilder As New StringBuilder
-
-                        .Color = DiscordColor.SpringGreen
-                        .ThumbnailUrl = player.RankedCurrent.Resources.Image
-
-                        .Author = New DiscordEmbedBuilder.EmbedAuthor With {
-                            .Name = $"{player.Username} - Level {player.ClearanceLevel} - {platform.ToUpper}",
-                            .IconUrl = $"https://ubisoft-avatars.akamaized.net/{player.UbisoftId}/default_146_146.png?appId=39baebad-39e5-4552-8c25-2c9b919064e2",
-                            .Url = $"https://game-rainbow6.ubi.com/en-us/uplay/player-statistics/{player.UbisoftId}/multiplayer"
-                        }
-
-                        .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                            .Text = $"Rainbow Six Siege",
-                            .IconUrl = "https://i.imgur.com/F8SVRpS.png"
-                        }
-
-                        strBuilder.Append($"K/D Ratio: `{(player.RankedOverall.Kills / player.RankedOverall.Deaths).ToString("N2")}`{Environment.NewLine}")
-                        strBuilder.Append($"Kills: `{player.RankedOverall.Kills.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Deaths: `{player.RankedOverall.Deaths.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"W/L Ratio: `{(player.RankedOverall.Wins / player.RankedOverall.Losses).ToString("N2")}`{Environment.NewLine}")
-                        strBuilder.Append($"Wins: `{player.RankedOverall.Wins.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Losses: `{player.RankedOverall.Losses.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(player.RankedOverall.Playtime))}`{Environment.NewLine}")
-
-                        .AddField("Ranked Overall", strBuilder.ToString, True)
-                        strBuilder.Clear()
-
-                        strBuilder.Append($"Ranking: `{player.RankedCurrent.Resources.RankName}`{Environment.NewLine}")
-                        strBuilder.Append($"Current MMR: `{CInt(Math.Round(player.RankedCurrent.CurrentMmr))}`{Environment.NewLine}")
-                        strBuilder.Append($"Highest MMR: `{CInt(Math.Round(player.RankedCurrent.HighestMmr))}`{Environment.NewLine}")
-                        strBuilder.Append($"Wins: `{player.RankedCurrent.Wins}`{Environment.NewLine}")
-                        strBuilder.Append($"Losses: `{player.RankedCurrent.Losses}`{Environment.NewLine}")
-                        strBuilder.Append($"Abandons: `{player.RankedCurrent.Abandons}`{Environment.NewLine}")
-                        If player.RankedCurrent.Resources.RankName <> "Unranked" Then strBuilder.Append($"Next rank at: `{player.RankedCurrent.NextRankMmr} MMR`{Environment.NewLine}")
-
-                        .AddField($"Current Ranked Season", strBuilder.ToString, True)
-                        strBuilder.Clear()
-
-                        strBuilder.Append($"K/D Ratio: `{(player.CasualOverall.Kills / player.CasualOverall.Deaths).ToString("N2")}`{Environment.NewLine}")
-                        strBuilder.Append($"Kills: `{player.CasualOverall.Kills.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Deaths: `{player.CasualOverall.Deaths.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"W/L Ratio: `{(player.CasualOverall.Wins / player.CasualOverall.Losses).ToString("N2")}`{Environment.NewLine}")
-                        strBuilder.Append($"Wins: `{player.CasualOverall.Wins.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Losses: `{player.CasualOverall.Losses.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(player.CasualOverall.Playtime))}`{Environment.NewLine}")
-
-                        .AddField("Casual Overall", strBuilder.ToString, True)
-                        strBuilder.Clear()
-
-                        strBuilder.Append($"Overall Playtime: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(player.CasualOverall.Playtime + player.RankedOverall.Playtime))}`{Environment.NewLine}")
-                        strBuilder.Append($"Headshots: `{player.GeneralStats.Headshots.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Assists: `{player.GeneralStats.KillAssists.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Melee Kills: `{player.GeneralStats.MeleeKills.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Penetration Kills: `{player.GeneralStats.PenetrationKills.ToString("N0")}`{Environment.NewLine}")
-                        strBuilder.Append($"Bullet Accuracy: `{((player.GeneralStats.ShotsHit / player.GeneralStats.ShotsFired) * 100).ToString("N1")}%`{Environment.NewLine}")
-                        strBuilder.Append($"Alpha Pack Chance: `{CInt(Math.Round(player.LootboxChance / 100))}%`")
-
-                        .AddField("General Stats", strBuilder.ToString, True)
-                        strBuilder.Clear()
-                    End With
-                End If
-            End If
-
-            Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
         <Command("overwatch"), Aliases("ow")>
