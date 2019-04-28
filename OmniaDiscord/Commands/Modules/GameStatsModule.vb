@@ -21,23 +21,76 @@ Namespace Commands.Modules
         Inherits OmniaCommandBase
 
 #Region "Commands"
+
+        <Group("siege"), Aliases("r6s", "r6")>
+        <Description("Retrieves various player stats for Ubisoft's Rainbow Six Siege.")>
+        <Cooldown(1, 5, CooldownBucketType.User)>
+        Public Class RainbowSixSiege
+            Inherits OmniaCommandBase
+
+            Private _validPlatforms As New List(Of String) From {"PC", "XBL", "PSN"}
+            Private _validRegions As New Dictionary(Of String, String) From {
+                {"NA", "ncsa"},
+                {"EU", "emea"},
+                {"AS", "apac"}
+            }
+
+            <Command("overall"), GroupCommand>
+            <Description("Displays an overview of relevant stats. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
+            Public Async Function OverallStats(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
+                Dim embed As New DiscordEmbedBuilder
+
+                If Not _validPlatforms.Contains(platform.ToUpper) Then
+                    ' Return failure message
+
+                ElseIf Not _validRegions.ContainsKey(region.ToUpper) Then
+                    ' Return failure message
+
+                Else
+                    Dim data = GetPlayerData(username, platform.ToLower)
+
+                    If data.stats IsNot Nothing AndAlso data.seasons IsNot Nothing Then
+                        ' Process data
+                    Else
+                        ' Return failure message
+                    End If
+
+                End If
+
+                Await ctx.RespondAsync(embed:=embed.Build)
+            End Function
+
+            Private Function GetPlayerData(username As String, platform As String) As (stats As SiegeStats, seasons As SiegeSeasons)
+                Dim baseUrl As String = "http://r6stats.com/api/"
+                Dim jsonSettings As New JsonSerializerSettings With {
+                    .NullValueHandling = NullValueHandling.Ignore,
+                    .MissingMemberHandling = MissingMemberHandling.Ignore
+                }
+
+                Dim players As SiegeSearchResult() = JsonConvert.DeserializeObject(Of SiegeSearchResult())(Utilities.GetJson($"{baseUrl}/player-search/{Uri.EscapeUriString(username)}"), jsonSettings)
+                Dim player As SiegeSearchResult = players.Select(Function(r) r.Username.ToLower = username.ToLower)
+                If player Is Nothing Then Return (Nothing, Nothing)
+
+                Dim stats As SiegeStats = JsonConvert.DeserializeObject(Of SiegeStats)(Utilities.GetJson($"{baseUrl}/stats/06458532-d978-4739-8d95-870ea4b7c4d6"), jsonSettings)
+                Dim seasons As SiegeSeasons = JsonConvert.DeserializeObject(Of SiegeSeasons)(Utilities.GetJson($"{baseUrl}/stats/06458532-d978-4739-8d95-870ea4b7c4d6/seasonal"), jsonSettings)
+
+                Return (stats, seasons)
+            End Function
+        End Class
+
         <Command("siege"), Aliases("r6s", "r6")>
         <Description("Retrieves player stats for Siege. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function RainbowSixSiege(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
-            Dim baseUrl As String = "http://r6stats.com/api/stats/"
-            Dim jsonSettings As New JsonSerializerSettings With {
-                .NullValueHandling = NullValueHandling.Ignore,
-                .MissingMemberHandling = MissingMemberHandling.Ignore,
-            }
 
-            Dim stats As SiegeStats = JsonConvert.DeserializeObject(Of SiegeStats)(GetJson($"{baseUrl}/06458532-d978-4739-8d95-870ea4b7c4d6"), jsonSettings)
-            Dim seaons As SiegeSeasons = JsonConvert.DeserializeObject(Of SiegeSeasons)(GetJson($"{baseUrl}/06458532-d978-4739-8d95-870ea4b7c4d6/seasonal"), jsonSettings)
+
 
         End Function
 
+
+
         <Command("overwatch"), Aliases("ow")>
-        <Description("Retrieves player stats for Overwatch. Valid platforms are PC, PSN, and XBL.")>
+        <Description("Retrieves an overview player stats for Blizzard's Overwatch. Valid platforms are PC, PSN, and XBL.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function OverwatchStats(ctx As CommandContext, platform As String, <RemainingText> username As String) As Task
             Dim embed As New DiscordEmbedBuilder
@@ -182,28 +235,6 @@ Namespace Commands.Modules
                 Next
             End If
         End Sub
-
-        Private Function GetJson(url As String) As String
-            Dim request As HttpWebRequest
-            Dim response As HttpWebResponse = Nothing
-            Dim reader As StreamReader
-            Dim rawjson As String = Nothing
-
-            request = CType(WebRequest.Create(url), HttpWebRequest)
-            request.UserAgent = "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.2 Safari/537.36"
-            request.Timeout = 12500
-
-            Try
-                response = CType(request.GetResponse(), HttpWebResponse)
-                reader = New StreamReader(response.GetResponseStream())
-                rawjson = reader.ReadToEnd()
-                reader.Close()
-            Catch webEx As WebException
-                Return Nothing
-            End Try
-
-            Return rawjson
-        End Function
 #End Region
 
     End Class

@@ -35,6 +35,10 @@ Public Class Utilities
         Return result.ToString()
     End Function
 
+    ''' <summary>
+    ''' Downloads an SVG file from a URL, renders it, then returns it as a <see cref="Stream"/><para/>
+    ''' Intended for usage with Discord embeds.
+    ''' </summary>
     Public Shared Async Function SvgToStreamAsync(svgUrl As String, Optional width As Integer = 512, Optional height As Integer = 512) As Task(Of Stream)
         Dim svg As SKSvg = New SKSvg
         Dim bitmap As New SKBitmap(width, height)
@@ -95,6 +99,9 @@ Public Class Utilities
         End If
     End Function
 
+    ''' <summary>
+    ''' Takes a <see cref="TimeSpan"/> and converts it into human readable text.
+    ''' </summary>
     Public Shared Function FormatTimespanToString(time As TimeSpan, Optional notRestrictedToHours As Boolean = False) As String
         If notRestrictedToHours Then
             If (Math.Floor(time.Days / 365) <> 0) Then
@@ -127,11 +134,39 @@ Public Class Utilities
         End If
     End Function
 
+    ''' <summary>
+    ''' Adds multiple timespans together.
+    ''' </summary>
     Public Shared Function CombineTimespans(timespans As IEnumerable(Of TimeSpan)) As String
         Dim total As New TimeSpan
         total = timespans.Aggregate(total, Function(current, timespan) current.Add(timespan))
 
         Return FormatTimespanToString(total)
+    End Function
+
+    ''' <summary>
+    ''' Retrieves the source code of a webpage. Intended to download JSON for deserialization.
+    ''' </summary>
+    Public Shared Function GetJson(url As String) As String
+        Dim request As HttpWebRequest
+        Dim response As HttpWebResponse = Nothing
+        Dim reader As StreamReader
+        Dim rawjson As String = Nothing
+
+        request = CType(WebRequest.Create(url), HttpWebRequest)
+        request.UserAgent = "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.2 Safari/537.36"
+        request.Timeout = 12500
+
+        Try
+            response = CType(request.GetResponse(), HttpWebResponse)
+            reader = New StreamReader(response.GetResponseStream())
+            rawjson = reader.ReadToEnd()
+            reader.Close()
+        Catch webEx As WebException
+            Return Nothing
+        End Try
+
+        Return rawjson
     End Function
 
 End Class
