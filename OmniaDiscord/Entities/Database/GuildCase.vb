@@ -1,4 +1,4 @@
-﻿Namespace Entites.Database
+﻿Namespace Entities.Database
     Public Structure GuildCase
         Public Property Timestamp As TimeSpan
         Public Property Action As GuildAction

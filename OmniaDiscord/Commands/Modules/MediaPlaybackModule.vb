@@ -13,8 +13,8 @@ Imports OmniaDiscord.Services
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
 Imports DSharpPlus.Interactivity.EventHandling
-Imports OmniaDiscord.Entites.Media
-Imports OmniaDiscord.Entites.Database
+Imports OmniaDiscord.Entities.Media
+Imports OmniaDiscord.Entities.Database
 
 Namespace Commands.Modules
 

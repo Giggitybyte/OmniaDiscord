@@ -13,7 +13,7 @@ Imports Microsoft.Extensions.DependencyInjection
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Commands.Checks
-Imports OmniaDiscord.Entites.Database
+Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
 
 Public Module Omnia

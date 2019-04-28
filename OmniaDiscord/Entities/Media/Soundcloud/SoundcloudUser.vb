@@ -1,6 +1,6 @@
 ﻿Imports Newtonsoft.Json
 
-Namespace Entites.Media.Soundcloud
+Namespace Entities.Media.Soundcloud
     Public Class SoundcloudUser
 
         <JsonProperty("username")>

@@ -1,6 +1,6 @@
 ﻿Imports System.Collections.Concurrent
 
-Namespace Entites.Media
+Namespace Entities.Media
 
     Public Class GuildPlaybackInfo
         Public Property CurrentTrack As OmniaMediaInfo

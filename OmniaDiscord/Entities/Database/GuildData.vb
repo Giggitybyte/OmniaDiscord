@@ -1,4 +1,4 @@
-﻿Namespace Entites.Database
+﻿Namespace Entities.Database
 
     Public Class GuildData
 
