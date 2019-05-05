@@ -44,7 +44,7 @@ Public Class Utilities
         Dim bitmap As New SKBitmap(width, height)
         Dim canvas As New SKCanvas(bitmap)
         Dim svgStream As Stream = New MemoryStream
-        Dim imageStream As Stream = New MemoryStream
+        Dim imageStream As Stream
 
         Using wclient As New WebClient
             svgStream = Await wclient.OpenReadTaskAsync(svgUrl)

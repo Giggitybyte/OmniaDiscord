@@ -2,7 +2,7 @@
 
 Namespace Entities.Gamestats
 
-    Public Class SiegeStats
+    Public Class SiegeStatData
 
         <JsonProperty("username")>
         Public Property Username As String
@@ -27,9 +27,6 @@ Namespace Entities.Gamestats
 
         <JsonProperty("operators")>
         Public Property Operators As OperatorStat()
-
-        <JsonProperty("error")>
-        Public Property ErrorMessage As String
     End Class
 
     Public Class Progression
@@ -68,7 +65,7 @@ Namespace Entities.Gamestats
         Public Property Deaths As Integer
 
         <JsonProperty("distance_travelled")>
-        Public Property DistanceTraveled As Integer
+        Public Property DistanceTraveled As Long
 
         <JsonProperty("draws")>
         Public Property Draws As Integer

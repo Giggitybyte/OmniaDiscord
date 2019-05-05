@@ -14,7 +14,6 @@ Imports YoutubeExplode
 Imports YoutubeExplode.Models
 Imports DSharpPlus.Interactivity.EventHandling
 Imports OmniaDiscord.Entities.Media
-Imports OmniaDiscord.Entities.Database
 
 Namespace Commands.Modules
 

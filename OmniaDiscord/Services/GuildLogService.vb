@@ -1,7 +1,5 @@
 ﻿Imports DSharpPlus
-Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
-Imports OmniaDiscord.Entities.Database
 
 Namespace Services
     Public Class GuildLogService

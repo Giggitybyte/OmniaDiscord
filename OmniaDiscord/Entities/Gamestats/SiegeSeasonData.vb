@@ -2,7 +2,7 @@
 
 Namespace Entities.Gamestats
 
-    Public Class SiegeSeasons
+    Public Class SiegeSeasonData
         <JsonProperty("username")>
         Public Property Username As String
 

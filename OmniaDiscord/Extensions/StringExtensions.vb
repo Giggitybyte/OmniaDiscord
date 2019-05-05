@@ -4,7 +4,7 @@ Namespace Extensions
     Module StringExtensions
 
         <Extension()>
-        Function SplitAtOccurence(input As String, separator As Char, occurence As Integer) As List(Of String)
+        Public Function SplitAtOccurence(input As String, separator As Char, occurence As Integer) As List(Of String)
             ' https://is.gd/tkxmos
 
             Dim parts As String() = input.Split(separator)

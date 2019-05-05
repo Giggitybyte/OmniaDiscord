@@ -1,12 +1,11 @@
-﻿Imports System.IO
-Imports System.Net
-Imports System.Text
+﻿Imports System.Text
+Imports System.Threading
 Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports DSharpPlus.EventArgs
 Imports Newtonsoft.Json
-Imports Newtonsoft.Json.Linq
 Imports OmniaDiscord.Entities.Gamestats
 Imports Overstarch
 Imports Overstarch.Entities
@@ -21,73 +20,167 @@ Namespace Commands.Modules
         Inherits OmniaCommandBase
 
 #Region "Commands"
-
-        <Group("siege"), Aliases("r6s", "r6")>
-        <Description("Retrieves various player stats for Ubisoft's Rainbow Six Siege.")>
+        <Command("siege"), Aliases("r6s", "r6")>
+        <Description("Retrieves various player stats for Ubisoft's Rainbow Six Siege. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
-        Public Class RainbowSixSiege
-            Inherits OmniaCommandBase
-
-            Private _validPlatforms As New List(Of String) From {"PC", "XBL", "PSN"}
-            Private _validRegions As New Dictionary(Of String, String) From {
+        Public Async Function RainbowSixSiegeCommand(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
+            Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
+            Dim validPlatforms As New List(Of String) From {"PC", "XBL", "PSN"}
+            Dim validRegions As New Dictionary(Of String, String) From {
                 {"NA", "ncsa"},
                 {"EU", "emea"},
                 {"AS", "apac"}
             }
 
-            <Command("overall"), GroupCommand>
-            <Description("Displays an overview of relevant stats. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
-            Public Async Function OverallStats(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
-                Dim embed As New DiscordEmbedBuilder
+            If Not validPlatforms.Contains(platform.ToUpper) Then
+                With embed
+                    .Title = "Invalid Platform"
+                    .Description = $"The platform you provided was not a valid platform.{Environment.NewLine}Valid platforms: {String.Join(", ", validPlatforms)}"
+                End With
 
-                If Not _validPlatforms.Contains(platform.ToUpper) Then
-                    ' Return failure message
+            ElseIf Not validRegions.ContainsKey(region.ToUpper) Then
+                With embed
+                    .Title = "Invalid Region"
+                    .Description = $"The region you provided was not a valid region.{Environment.NewLine}Valid regions: {String.Join(", ", validRegions.Keys)}"
+                End With
 
-                ElseIf Not _validRegions.ContainsKey(region.ToUpper) Then
-                    ' Return failure message
+            End If
 
-                Else
-                    Dim data = GetPlayerData(username, platform.ToLower)
+            If Not String.IsNullOrEmpty(embed.Description) Then
+                Await ctx.RespondAsync(embed:=embed.Build)
+                Return
+            End If
 
-                    If data.stats IsNot Nothing AndAlso data.seasons IsNot Nothing Then
-                        ' Process data
-                    Else
-                        ' Return failure message
-                    End If
+            Await ctx.TriggerTypingAsync
 
-                End If
+            Dim baseUrl As String = "https://r6stats.com/api/"
+            Dim jsonSettings As New JsonSerializerSettings With {
+                .NullValueHandling = NullValueHandling.Ignore,
+                .MissingMemberHandling = MissingMemberHandling.Ignore
+            }
+
+            Dim searchJson As String = Utilities.GetJson($"{baseUrl}/player-search/{Uri.EscapeUriString(username)}/{platform}")
+            Dim player As SiegeSearchResult
+
+            If Not String.IsNullOrEmpty(searchJson) Then
+                Dim players As List(Of SiegeSearchResult) = JsonConvert.DeserializeObject(Of List(Of SiegeSearchResult))(searchJson, jsonSettings)
+                player = players.FirstOrDefault(Function(r) r.Username.ToLower = username.ToLower)
+            End If
+
+            If player Is Nothing Then
+                With embed
+                    .Title = "Player Not Found"
+                    .Description = "A player profile could not be found with the input provided."
+                    .Description &= $"{Environment.NewLine}Make sure you have the correct username, region, and platform."
+                End With
 
                 Await ctx.RespondAsync(embed:=embed.Build)
-            End Function
+                Return
+            End If
 
-            Private Function GetPlayerData(username As String, platform As String) As (stats As SiegeStats, seasons As SiegeSeasons)
-                Dim baseUrl As String = "http://r6stats.com/api/"
-                Dim jsonSettings As New JsonSerializerSettings With {
-                    .NullValueHandling = NullValueHandling.Ignore,
-                    .MissingMemberHandling = MissingMemberHandling.Ignore
+            Dim statJson As String = Utilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}")
+            Dim statData As SiegeStatData
+            Dim seasonData As SiegeSeasonData
+
+            If Not statJson Is Nothing Then
+                statData = JsonConvert.DeserializeObject(Of SiegeStatData)(statJson, jsonSettings)
+                seasonData = JsonConvert.DeserializeObject(Of SiegeSeasonData)(Utilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}/seasonal"), jsonSettings)
+            End If
+
+            If statData Is Nothing Or seasonData Is Nothing Then
+                With embed
+                    .Title = "Unable To Retrieve Stats"
+                    .Description = $"Something went wrong while getting player data from R6Stats."
+                End With
+
+                Await ctx.RespondAsync(embed:=embed.Build)
+                Return
+            End If
+
+            Dim strBuilder As New StringBuilder
+            Dim embeds As New Dictionary(Of DiscordEmoji, DiscordEmbed)
+            Dim stats As Stats = statData.Stats.OrderByDescending(Function(s) s.Timestamps.LastUpdated).FirstOrDefault
+            Dim currentSeason As SeasonInfo = seasonData.Seasons.OrderByDescending(Function(s) s.Value.Id).FirstOrDefault.Value
+            Dim ranking As RegionRanking = currentSeason.Regions(validRegions(region.ToUpper)).OrderByDescending(Function(r) r.CreatedForDate).FirstOrDefault
+
+            embed = New DiscordEmbedBuilder
+
+            With embed
+
+                strBuilder.AppendLine($"K/D Ratio: `{(stats.Queue.Ranked.Kills / stats.Queue.Ranked.Deaths).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Kills: `{stats.Queue.Ranked.Kills.ToString("N0")}`")
+                strBuilder.AppendLine($"Deaths: `{stats.Queue.Ranked.Deaths.ToString("N0")}`")
+                strBuilder.AppendLine($"W/L Ratio: `{(stats.Queue.Ranked.Wins / stats.Queue.Ranked.Losses).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Wins: `{stats.Queue.Ranked.Wins.ToString("N0")}`")
+                strBuilder.AppendLine($"Losses: `{stats.Queue.Ranked.Losses.ToString("N0")}`")
+                strBuilder.AppendLine($"Total Matches: `{stats.Queue.Ranked.GamesPlayed.ToString("N0")}`")
+                strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Ranked.Kills / stats.Queue.Ranked.GamesPlayed).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Ranked.Playtime))}`")
+
+                .AddField("Ranked", strBuilder.ToString, True)
+                strBuilder.Clear()
+
+
+                strBuilder.AppendLine($"Current Rank: `{SiegeRanks.GetRankFromId(ranking.Rank).rankName}`")
+                strBuilder.AppendLine($"Current MMR: `{ranking.Mmr}`")
+                strBuilder.AppendLine($"Highest Rank: `{SiegeRanks.GetRankFromId(ranking.MaxRank).rankName}`")
+                strBuilder.AppendLine($"Highest MMR: `{ranking.MaxMmr}`")
+                strBuilder.AppendLine($"W/L Ratio: `{(ranking.Wins / ranking.Losses).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Wins: `{ranking.Wins.ToString("N0")}`")
+                strBuilder.AppendLine($"Losses: `{ranking.Losses.ToString("N0")}`")
+                strBuilder.AppendLine($"Abandons: `{ranking.Abandons.ToString("N0")}`")
+                If Not ranking.Rank = 0 AndAlso Not ranking.NextRankMmr = 0 Then
+                    strBuilder.AppendLine($"Next Rank In: `{(ranking.NextRankMmr - ranking.Mmr).ToStringNoRounding} MMR`")
+                End If
+
+                .AddField(currentSeason.Name, strBuilder.ToString, True)
+                strBuilder.Clear()
+
+
+                strBuilder.AppendLine($"K/D Ratio: `{(stats.Queue.Casual.Kills / stats.Queue.Casual.Deaths).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Kills: `{stats.Queue.Casual.Kills.ToString("N0")}`")
+                strBuilder.AppendLine($"Deaths: `{stats.Queue.Casual.Deaths.ToString("N0")}`")
+                strBuilder.AppendLine($"W/L Ratio: `{(stats.Queue.Casual.Wins / stats.Queue.Casual.Losses).ToStringNoRounding}`")
+                strBuilder.AppendLine($"Wins: `{stats.Queue.Casual.Wins.ToString("N0")}`")
+                strBuilder.AppendLine($"Losses: `{stats.Queue.Casual.Losses.ToString("N0")}`")
+                strBuilder.AppendLine($"Total Matches: `{stats.Queue.Casual.GamesPlayed.ToString("N0")}`")
+                strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Casual.Kills / stats.Queue.Casual.GamesPlayed).ToStringNoRounding()}`")
+                strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Casual.Playtime))}`")
+
+                .AddField("Casual", strBuilder.ToString, True)
+                strBuilder.Clear()
+
+
+                strBuilder.AppendLine($"Overall Playtime: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.General.Playtime))}`")
+                strBuilder.AppendLine($"Headshots: `{stats.General.Headshots.ToString("N0")}`")
+                strBuilder.AppendLine($"Assists: `{stats.General.Assists.ToString("N0")}`")
+                strBuilder.AppendLine($"Penetration Kills: `{stats.General.PenetrationKills.ToString("N0")}`")
+                strBuilder.AppendLine($"Melee Kills: `{stats.General.MeleeKills.ToString("N0")}`")
+                strBuilder.AppendLine($"Blind Kills: `{stats.General.BlindKills.ToString("N0")}`")
+                strBuilder.AppendLine($"Revives `{stats.General.Revives.ToString("N0")}`")
+                strBuilder.AppendLine($"Bullet Accuracy: `{((100 * stats.General.BulletsHit) / stats.General.BulletsFired).ToStringNoRounding}%`")
+                strBuilder.AppendLine($"Alpha Pack Chance: `{(statData.Progression.LootboxProbability / 100).ToStringNoRounding}%`")
+
+                .AddField("General", strBuilder.ToString, True)
+                strBuilder.Clear()
+
+                .Color = DiscordColor.SpringGreen
+                .ThumbnailUrl = SiegeRanks.GetRankFromId(ranking.Rank).url
+
+                .Author = New DiscordEmbedBuilder.EmbedAuthor With {
+                    .Name = $"{player.Username} - Level {statData.Progression.Level} - {platform.ToUpper}",
+                    .IconUrl = $"https://ubisoft-avatars.akamaized.net/{player.UbisoftId}/default_146_146.png?appId=39baebad-39e5-4552-8c25-2c9b919064e2",
+                    .Url = $"https://game-rainbow6.ubi.com/en-us/uplay/player-statistics/{player.UbisoftId}/multiplayer"
                 }
 
-                Dim players As SiegeSearchResult() = JsonConvert.DeserializeObject(Of SiegeSearchResult())(Utilities.GetJson($"{baseUrl}/player-search/{Uri.EscapeUriString(username)}"), jsonSettings)
-                Dim player As SiegeSearchResult = players.Select(Function(r) r.Username.ToLower = username.ToLower)
-                If player Is Nothing Then Return (Nothing, Nothing)
+                .Footer = New DiscordEmbedBuilder.EmbedFooter With {
+                    .Text = $"Rainbow Six Siege",
+                    .IconUrl = "https://i.imgur.com/F8SVRpS.png"
+                }
+            End With
 
-                Dim stats As SiegeStats = JsonConvert.DeserializeObject(Of SiegeStats)(Utilities.GetJson($"{baseUrl}/stats/06458532-d978-4739-8d95-870ea4b7c4d6"), jsonSettings)
-                Dim seasons As SiegeSeasons = JsonConvert.DeserializeObject(Of SiegeSeasons)(Utilities.GetJson($"{baseUrl}/stats/06458532-d978-4739-8d95-870ea4b7c4d6/seasonal"), jsonSettings)
-
-                Return (stats, seasons)
-            End Function
-        End Class
-
-        <Command("siege"), Aliases("r6s", "r6")>
-        <Description("Retrieves player stats for Siege. Valid platforms are PC, PSN, and XBL. Valid regions are NA, EU, and AS.")>
-        <Cooldown(1, 5, CooldownBucketType.User)>
-        Public Async Function RainbowSixSiege(ctx As CommandContext, platform As String, region As String, <RemainingText> username As String) As Task
-
-
-
+            Await ctx.RespondAsync(embed:=embed.Build)
         End Function
-
-
 
         <Command("overwatch"), Aliases("ow")>
         <Description("Retrieves an overview player stats for Blizzard's Overwatch. Valid platforms are PC, PSN, and XBL.")>
@@ -178,7 +271,7 @@ Namespace Commands.Modules
 
                             strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(qpTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{qpGamesWon.ToString("N0")}`{Environment.NewLine}")
-                            strBuilder.Append($"K/D Ratio: `{(qpElims / qpDeaths).ToString("N2")}`{Environment.NewLine}")
+                            strBuilder.Append($"K/D Ratio: `{(qpElims / qpDeaths).ToStringNoRounding}`{Environment.NewLine}")
                             strBuilder.Append($"Eliminations: `{qpElims.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Solo Kills: `{qpSoloKills.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Total Medals: `{qpMedals.ToString("N0")}`")
@@ -196,7 +289,7 @@ Namespace Commands.Modules
                             strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(compTimePlayed))}`{Environment.NewLine}")
                             strBuilder.Append($"Games Played: `{compGamesPlayed.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{compGamesWon.ToString("N0")}`{Environment.NewLine}")
-                            strBuilder.Append($"K/D Ratio: `{(compElims / compDeaths).ToString("N2")}`{Environment.NewLine}")
+                            strBuilder.Append($"K/D Ratio: `{(compElims / compDeaths).ToStringNoRounding}`{Environment.NewLine}")
                             strBuilder.Append($"Eliminations: `{compElims.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Solo Kills: `{compSoloKills.ToString("N0")}`")
 
@@ -223,6 +316,64 @@ Namespace Commands.Modules
 #End Region
 
 #Region "Helper Methods"
+        Private Async Function DoEmbedPaginationAsync(ctx As CommandContext, embeds As Dictionary(Of DiscordEmoji, DiscordEmbed), Optional timeout As Integer = 30000) As Task
+            Dim tsc As New TaskCompletionSource(Of String)
+            Dim ct As New CancellationTokenSource(timeout)
+            ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
+
+            Dim currentEmoji As DiscordEmoji = embeds.First.Key
+            Dim emojis As New List(Of DiscordEmoji)
+            Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embeds(currentEmoji))
+
+            For Each embed In embeds
+                emojis.Add(embed.Key)
+                Await ctx.Message.CreateReactionAsync(embed.Key)
+            Next
+
+            Dim handler = Async Function(e)
+                              If TypeOf e Is MessageReactionAddEventArgs Or TypeOf e Is MessageReactionRemoveEventArgs Then
+                                  If e.Message.Id = message.Id AndAlso e.User.Id <> ctx.Client.CurrentUser.Id AndAlso e.User.Id = ctx.Member.Id Then
+                                      Dim emoji As DiscordEmoji = DirectCast(e.Emoji, DiscordEmoji)
+
+                                      ct.Dispose()
+                                      ct = New CancellationTokenSource(timeout)
+                                      ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
+
+                                      If emojis.Contains(emoji) Then currentEmoji = emoji
+
+                                  Else
+                                      Return
+                                  End If
+
+                              ElseIf TypeOf e Is MessageReactionsClearEventArgs Then
+                                  For Each emoji In emojis
+                                      Await ctx.Message.CreateReactionAsync(emoji)
+                                  Next
+                              End If
+
+                              If Not ct.IsCancellationRequested Then Await message.ModifyAsync(embed:=embeds(currentEmoji))
+                          End Function
+
+            Try
+                AddHandler ctx.Client.MessageReactionAdded, handler
+                AddHandler ctx.Client.MessageReactionRemoved, handler
+                AddHandler ctx.Client.MessageReactionsCleared, handler
+
+                Await tsc.Task.ConfigureAwait(False)
+            Catch ex As Exception
+                Throw
+
+            Finally
+                RemoveHandler ctx.Client.MessageReactionAdded, handler
+                RemoveHandler ctx.Client.MessageReactionRemoved, handler
+                RemoveHandler ctx.Client.MessageReactionsCleared, handler
+
+            End Try
+
+            ct.Dispose()
+            Await message.DeleteAllReactionsAsync
+        End Function
+
         Private Sub FormatOverwatchHeroPlaytime(client As DiscordClient, stats As List(Of OverwatchStat), ByRef strBuilder As StringBuilder)
             Dim sortedStats As List(Of OverwatchStat) = stats.FilterByName("Time Played").OrderByDescending(Function(s) s.Value).Where(Function(s) s.Hero <> "AllHeroes" AndAlso s.Value <> 0).Take(5).ToList
 
