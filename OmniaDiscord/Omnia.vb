@@ -204,9 +204,12 @@ Public Class Bot
                         End If
                     Next
 
-                Else
+                ElseIf Not (arg.Exception.Message.Contains("No matching subcommands were found") Or
+                    arg.Exception.Message.Contains("Could not find a suitable overload")) Then
+
                     Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
 
+                    ' TODO: upload exception message somewhere if over 1920 characters.
                     builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
                     builder.AppendLine($"```{arg.Exception}```")
 
