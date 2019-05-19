@@ -117,7 +117,7 @@ Namespace Commands.Modules
                 strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Ranked.Kills / stats.Queue.Ranked.GamesPlayed).ToStringNoRounding}`")
                 strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Ranked.Playtime))}`")
 
-                .AddField("Ranked", strBuilder.ToString, True)
+                .AddField("Ranked Overall", strBuilder.ToString, True)
                 strBuilder.Clear()
 
 
@@ -147,7 +147,7 @@ Namespace Commands.Modules
                 strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Casual.Kills / stats.Queue.Casual.GamesPlayed).ToStringNoRounding()}`")
                 strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Casual.Playtime))}`")
 
-                .AddField("Casual", strBuilder.ToString, True)
+                .AddField("Casual Overall", strBuilder.ToString, True)
                 strBuilder.Clear()
 
 
@@ -164,17 +164,22 @@ Namespace Commands.Modules
                 .AddField("General", strBuilder.ToString, True)
                 strBuilder.Clear()
 
+
+                Dim timeDifference As TimeSpan = Date.Now - stats.Timestamps.LastUpdated.ToLocalTime
+                Dim humanizedTime As String = "A Moment Ago"
+                If timeDifference >= TimeSpan.FromSeconds(10) Then humanizedTime = $"{Utilities.FormatTimespanToString(timeDifference)} ago"
+
                 .Color = DiscordColor.SpringGreen
                 .ThumbnailUrl = SiegeRanks.GetRankFromId(ranking.Rank).url
 
                 .Author = New DiscordEmbedBuilder.EmbedAuthor With {
-                    .Name = $"{player.Username} - Level {statData.Progression.Level} - {platform.ToUpper}",
+                    .Name = $"{player.Username} • Level {statData.Progression.Level} • {platform.ToUpper}",
                     .IconUrl = $"https://ubisoft-avatars.akamaized.net/{player.UbisoftId}/default_146_146.png?appId=39baebad-39e5-4552-8c25-2c9b919064e2",
-                    .Url = $"https://game-rainbow6.ubi.com/en-us/uplay/player-statistics/{player.UbisoftId}/multiplayer"
+                    .Url = $"https://r6stats.com/stats/{player.UbisoftId}/"
                 }
 
                 .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                    .Text = $"Rainbow Six Siege",
+                    .Text = $"Rainbow Six Siege  •  Updated {humanizedTime}",
                     .IconUrl = "https://i.imgur.com/F8SVRpS.png"
                 }
             End With
@@ -238,7 +243,7 @@ Namespace Commands.Modules
                         End If
 
                         .Author = New DiscordEmbedBuilder.EmbedAuthor With {
-                            .Name = $"{owPlayer.Username} - Level {owPlayer.PlayerLevel} - {owPlayer.Platform.ToString}",
+                            .Name = $"{owPlayer.Username} • Level {owPlayer.PlayerLevel} • {owPlayer.Platform.ToString}",
                             .IconUrl = owPlayer.PlayerIconUrl,
                             .Url = owPlayer.ProfileUrl
                         }
