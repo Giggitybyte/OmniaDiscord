@@ -2,7 +2,10 @@
 Imports System.Net
 Imports System.Security.Cryptography
 Imports System.Text
+Imports System.Threading
+Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
+Imports DSharpPlus.EventArgs
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
@@ -167,6 +170,64 @@ Public Class Utilities
         End Try
 
         Return rawjson
+    End Function
+
+    Private Async Function DoEmbedPaginationAsync(ctx As CommandContext, embeds As Dictionary(Of DiscordEmoji, DiscordEmbed), Optional timeout As Integer = 30000) As Task
+        Dim tsc As New TaskCompletionSource(Of String)
+        Dim ct As New CancellationTokenSource(timeout)
+        ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
+
+        Dim currentEmoji As DiscordEmoji = embeds.First.Key
+        Dim emojis As New List(Of DiscordEmoji)
+        Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embeds(currentEmoji))
+
+        For Each embed In embeds
+            emojis.Add(embed.Key)
+            Await ctx.Message.CreateReactionAsync(embed.Key)
+        Next
+
+        Dim handler = Async Function(e)
+                          If TypeOf e Is MessageReactionAddEventArgs Or TypeOf e Is MessageReactionRemoveEventArgs Then
+                              If e.Message.Id = message.Id AndAlso e.User.Id <> ctx.Client.CurrentUser.Id AndAlso e.User.Id = ctx.Member.Id Then
+                                  Dim emoji As DiscordEmoji = DirectCast(e.Emoji, DiscordEmoji)
+
+                                  ct.Dispose()
+                                  ct = New CancellationTokenSource(timeout)
+                                  ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
+
+                                  If emojis.Contains(emoji) Then currentEmoji = emoji
+
+                              Else
+                                  Return
+                              End If
+
+                          ElseIf TypeOf e Is MessageReactionsClearEventArgs Then
+                              For Each emoji In emojis
+                                  Await ctx.Message.CreateReactionAsync(emoji)
+                              Next
+                          End If
+
+                          If Not ct.IsCancellationRequested Then Await message.ModifyAsync(embed:=embeds(currentEmoji))
+                      End Function
+
+        Try
+            AddHandler ctx.Client.MessageReactionAdded, handler
+            AddHandler ctx.Client.MessageReactionRemoved, handler
+            AddHandler ctx.Client.MessageReactionsCleared, handler
+
+            Await tsc.Task.ConfigureAwait(False)
+        Catch ex As Exception
+            Throw
+
+        Finally
+            RemoveHandler ctx.Client.MessageReactionAdded, handler
+            RemoveHandler ctx.Client.MessageReactionRemoved, handler
+            RemoveHandler ctx.Client.MessageReactionsCleared, handler
+
+        End Try
+
+        ct.Dispose()
+        Await message.DeleteAllReactionsAsync
     End Function
 
 End Class

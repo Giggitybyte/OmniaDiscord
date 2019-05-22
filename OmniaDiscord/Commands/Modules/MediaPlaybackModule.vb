@@ -12,7 +12,6 @@ Imports OmniaDiscord.Extensions
 Imports OmniaDiscord.Services
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
-Imports DSharpPlus.Interactivity.EventHandling
 Imports OmniaDiscord.Entities.Media
 
 Namespace Commands.Modules
@@ -655,7 +654,7 @@ Namespace Commands.Modules
 
             Dim pageNumber As Integer = 1
             Dim message As DiscordMessage = Await ctx.RespondAsync(Formatter.BlockCode(pages(pageNumber - 1), "markdown"))
-            Dim emojis As New PaginationEmojis(ctx.Client)
+            Dim emojis As New PaginationEmojis()
 
             AddPaginationEmojis(message, emojis)
 
