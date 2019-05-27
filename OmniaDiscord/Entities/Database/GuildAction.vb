@@ -7,8 +7,8 @@
         Kick
         Ban
         Unban
-        Softban
-        Tempban
+        SoftBan
+        TempBan
         VoiceKick
     End Enum
 End Namespace

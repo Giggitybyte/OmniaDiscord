@@ -157,7 +157,7 @@ Namespace Commands.Modules
                 strBuilder.Clear()
 
 
-                Dim timeDifference As TimeSpan = Date.Now - stats.Timestamps.LastUpdated.ToLocalTime
+                Dim timeDifference As TimeSpan = Date.Now - ranking.CreatedForDate.ToLocalTime
                 Dim humanizedTime As String = If(timeDifference <= TimeSpan.FromSeconds(10), "A Moment Ago", $"{Utilities.FormatTimespanToString(timeDifference)} ago")
 
                 .Color = DiscordColor.SpringGreen

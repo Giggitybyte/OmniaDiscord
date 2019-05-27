@@ -1,4 +1,5 @@
-﻿Imports System.Threading
+﻿Imports System.Collections.Concurrent
+Imports System.Threading
 Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
@@ -12,11 +13,10 @@ Namespace Commands.Modules
     Public Class AdministrationModule
         Inherits OmniaCommandBase
 
-        Private _softBans As SoftbanService
         Private _muteService As MuteService
+        Private _softBanTokens As ConcurrentDictionary(Of ULong, CancellationTokenSource)
 
-        Sub New(sbService As SoftbanService, muteService As MuteService)
-            _softBans = sbService
+        Sub New(muteService As MuteService)
             _muteService = muteService
         End Sub
 
@@ -84,7 +84,7 @@ Namespace Commands.Modules
                     Dim userId As ULong = targetMember.Value.Id
                     Dim cts As New CancellationTokenSource
 
-                    _softBans.BanCancellationTokens.TryAdd(ctx.Guild.Id, cts)
+                    _softBanTokens.TryAdd(ctx.Guild.Id, cts)
                     Await guild.BanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator}")
                     Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
                     Task.Delay(300000, cts.Token).ContinueWith(Sub() guild.UnbanMemberAsync(userId, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
@@ -113,7 +113,7 @@ Namespace Commands.Modules
 
                 Else
                     Dim cts As CancellationTokenSource
-                    If _softBans.BanCancellationTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
+                    If _softBanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
                     Await ctx.Guild.UnbanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator}")
                     Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))

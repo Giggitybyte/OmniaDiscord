@@ -71,10 +71,10 @@ Public Class Bot
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
             .AddSingleton(Of MuteService)
-            .AddSingleton(Of SoftbanService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
             '.AddSingleton(Of GuildLogService)
+            .AddSingleton(Of LobbySystemService)
             .AddSingleton(Of MediaRetrievalService)
 
             _services = .BuildServiceProvider
@@ -118,119 +118,109 @@ Public Class Bot
 
     Private Async Function PrefixResolver(msg As DiscordMessage) As Task(Of Integer)
         Dim config As Configuration = _services.GetRequiredService(Of Configuration)
+        If msg.GetStringPrefixLength(config.DefaultPrefix) <> -1 Then Return Await Task.FromResult(msg.GetStringPrefixLength(config.DefaultPrefix))
 
-        If msg.GetStringPrefixLength(config.DefaultPrefix) <> -1 Then
-            Return Await Task.FromResult(msg.GetStringPrefixLength(config.DefaultPrefix))
+        Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
+        Dim settings As GuildSettings = db.GetGuildSettings(msg.Channel.GuildId)
 
-        Else
-            Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
-            Dim settings As GuildSettings = db.GetGuildSettings(msg.Channel.GuildId)
+        If settings.Prefix IsNot Nothing AndAlso msg.GetStringPrefixLength(settings.Prefix) <> -1 Then Return Await Task.FromResult(msg.GetStringPrefixLength(settings.Prefix))
 
-            If settings.Prefix IsNot Nothing AndAlso msg.GetStringPrefixLength(settings.Prefix) <> -1 Then
-                Return Await Task.FromResult(msg.GetStringPrefixLength(settings.Prefix))
-
-            Else
-                Dim discord As DiscordShardedClient = _services.GetRequiredService(Of DiscordShardedClient)
-
-                If msg.GetMentionPrefixLength(discord.CurrentUser) <> -1 Then
-                    Dim botUser As DiscordUser = _services.GetRequiredService(Of DiscordShardedClient).CurrentUser
-                    Return Await Task.FromResult(msg.GetMentionPrefixLength(botUser))
-                End If
-            End If
+        Dim discord As DiscordShardedClient = _services.GetRequiredService(Of DiscordShardedClient)
+        If msg.GetMentionPrefixLength(discord.CurrentUser) <> -1 Then
+            Dim botUser As DiscordUser = _services.GetRequiredService(Of DiscordShardedClient).CurrentUser
+            Return Await Task.FromResult(msg.GetMentionPrefixLength(botUser))
         End If
+
 
         Return Await Task.FromResult(-1)
     End Function
 
     Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
+        If arg.Command Is Nothing Then Return
 
-        If arg.Command IsNot Nothing Then
-            Dim channelPerms As Permissions = arg.Context.Channel.PermissionsFor(arg.Context.Guild.CurrentMember)
-            Dim builder As New StringBuilder
+        Dim builder As New StringBuilder
+        Dim channelPerms As Permissions = arg.Context.Channel.PermissionsFor(arg.Context.Guild.CurrentMember)
+        If Not channelPerms.HasPermission(Permissions.SendMessages) Then Return
 
-            If channelPerms.HasPermission(Permissions.SendMessages) Then
-                If TryCast(arg.Exception, ChecksFailedException) IsNot Nothing Then
-                    Dim exception As ChecksFailedException = TryCast(arg.Exception, ChecksFailedException)
+        If TryCast(arg.Exception, ChecksFailedException) IsNot Nothing Then
+            Dim exception As ChecksFailedException = TryCast(arg.Exception, ChecksFailedException)
 
-                    For Each failedCheck As CheckBaseAttribute In exception.FailedChecks
-                        If TryCast(failedCheck, RequireBotPermissionsAttribute) IsNot Nothing Then
-                            Dim check As RequireBotPermissionsAttribute = CType(failedCheck, RequireBotPermissionsAttribute)
-                            builder.AppendLine($"I don't have the right permissions to execute this command.")
-                            builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
+            For Each failedCheck As CheckBaseAttribute In exception.FailedChecks
+                If TryCast(failedCheck, RequireBotPermissionsAttribute) IsNot Nothing Then
+                    Dim check As RequireBotPermissionsAttribute = CType(failedCheck, RequireBotPermissionsAttribute)
+                    builder.AppendLine($"I don't have the right permissions to execute this command.")
+                    builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
 
-                        ElseIf TryCast(failedCheck, RequireUserPermissionsAttribute) IsNot Nothing Then
-                            Dim check As RequireUserPermissionsAttribute = CType(failedCheck, RequireUserPermissionsAttribute)
-                            builder.AppendLine($"You don't have the right permissions to use this command.")
-                            builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
+                ElseIf TryCast(failedCheck, RequireUserPermissionsAttribute) IsNot Nothing Then
+                    Dim check As RequireUserPermissionsAttribute = CType(failedCheck, RequireUserPermissionsAttribute)
+                    builder.AppendLine($"You don't have the right permissions to use this command.")
+                    builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
 
-                        ElseIf TryCast(failedCheck, CooldownAttribute) IsNot Nothing Then
-                            Dim check As CooldownAttribute = CType(failedCheck, CooldownAttribute)
-                            Dim remainingTime As String = Utilities.FormatTimespanToString(check.GetRemainingCooldown(arg.Context))
-                            Dim scope As String = String.Empty
+                ElseIf TryCast(failedCheck, CooldownAttribute) IsNot Nothing Then
+                    Dim check As CooldownAttribute = CType(failedCheck, CooldownAttribute)
+                    Dim remainingTime As String = Utilities.FormatTimespanToString(check.GetRemainingCooldown(arg.Context))
+                    Dim scope As String = String.Empty
 
-                            Select Case check.BucketType
-                                Case CooldownBucketType.User
-                                    scope = "for you"
-                                Case CooldownBucketType.Channel
-                                    scope = "in this channel"
-                                Case CooldownBucketType.Guild
-                                    scope = "for this server"
-                            End Select
+                    Select Case check.BucketType
+                        Case CooldownBucketType.User
+                            scope = "for you"
+                        Case CooldownBucketType.Channel
+                            scope = "in this channel"
+                        Case CooldownBucketType.Guild
+                            scope = "for this server"
+                    End Select
 
-                            builder.AppendLine($"`{arg.Command.QualifiedName}` is on cooldown {scope}. Remaining time: {remainingTime}.")
+                    builder.AppendLine($"`{arg.Command.QualifiedName}` is on cooldown {scope}. Remaining time: {remainingTime}.")
 
-                        ElseIf TryCast(failedCheck, RequireGuildAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used on a server.")
+                ElseIf TryCast(failedCheck, RequireGuildAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used on a server.")
 
-                        ElseIf TryCast(failedCheck, RequireDirectMessageAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used in a direct message.")
+                ElseIf TryCast(failedCheck, RequireDirectMessageAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used in a direct message.")
 
-                        ElseIf TryCast(failedCheck, RequireNsfwAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used in channels marked as NSFW.")
+                ElseIf TryCast(failedCheck, RequireNsfwAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used in channels marked as NSFW.")
 
-                        ElseIf TryCast(failedCheck, RequireOwnerAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used by my creator.")
+                ElseIf TryCast(failedCheck, RequireOwnerAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used by my creator.")
 
-                        ElseIf TryCast(failedCheck, RequireGuildOwnerAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used by the server owner.")
+                ElseIf TryCast(failedCheck, RequireGuildOwnerAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used by the server owner.")
 
-                        ElseIf TryCast(failedCheck, RequireStaffAttribute) IsNot Nothing Then
-                            builder.AppendLine($"This command can only be used by those with a staff title.")
+                ElseIf TryCast(failedCheck, RequireStaffAttribute) IsNot Nothing Then
+                    builder.AppendLine($"This command can only be used by those with a staff title.")
 
-                        ElseIf TryCast(failedCheck, RequireTitleAttribute) IsNot Nothing Then
-                            Dim check As RequireTitleAttribute = CType(failedCheck, RequireTitleAttribute)
-                            builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
-
-                        End If
-                    Next
-
-                ElseIf Not (arg.Exception.Message.Contains("No matching subcommands were found") Or
-                    arg.Exception.Message.Contains("Could not find a suitable overload")) Then
-
-                    Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
-
-                    ' TODO: upload exception message somewhere if over 1920 characters.
-                    builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
-                    builder.AppendLine($"```{arg.Exception}```")
+                ElseIf TryCast(failedCheck, RequireTitleAttribute) IsNot Nothing Then
+                    Dim check As RequireTitleAttribute = CType(failedCheck, RequireTitleAttribute)
+                    builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
 
                 End If
+            Next
 
-                If builder.Length = 0 Then Return
+        ElseIf Not (arg.Exception.Message.Contains("No matching subcommands were found") Or
+                arg.Exception.Message.Contains("Could not find a suitable overload")) Then
 
-                If channelPerms.HasPermission(Permissions.EmbedLinks) Then
-                    Dim embed As New DiscordEmbedBuilder With {
+            Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
+
+            ' TODO: upload exception message somewhere if over 1920 characters.
+            builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
+            builder.AppendLine($"```{arg.Exception}```")
+
+        End If
+
+        If builder.Length = 0 Then Return
+
+        If channelPerms.HasPermission(Permissions.EmbedLinks) Then
+            Dim embed As New DiscordEmbedBuilder With {
                         .Color = DiscordColor.Red,
                         .Title = "Unable To Execute Command",
                         .Description = builder.ToString
                     }
 
-                    Await arg.Context.RespondAsync(embed:=embed.Build)
+            Await arg.Context.RespondAsync(embed:=embed.Build)
 
-                Else
-                    Await arg.Context.RespondAsync(builder.ToString)
-                End If
-            End If
-
+        Else
+            Await arg.Context.RespondAsync(builder.ToString)
         End If
 
     End Function

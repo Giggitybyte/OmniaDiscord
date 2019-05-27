@@ -20,48 +20,50 @@ Namespace Services
             AddHandler _client.VoiceStateUpdated, AddressOf LogVoiceChange
         End Sub
 
-        Public Sub LogMemberKick(targetUser As ULong, responsibleUser As ULong, reason As String)
+        Private Function LogMemberJoin(arg As GuildMemberAddEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
 
+        Private Function LogMemberLeave(arg As GuildMemberRemoveEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
+
+        Private Function LogMessageDeletion(arg As MessageDeleteEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
+
+        Private Function LogMessageEdit(arg As MessageUpdateEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
+
+        Private Function LogMemberChange(arg As GuildMemberUpdateEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
+
+        Private Function LogVoiceChange(arg As VoiceStateUpdateEventArgs) As Task
+            Throw New NotImplementedException
+        End Function
+
+        Public Sub LogMemberKick(targetUser As ULong, responsibleUser As ULong, reason As String)
+            Throw New NotImplementedException
         End Sub
 
         Private Function LogMemberBan(e As GuildBanAddEventArgs) As Task
             ' FIGURE OUT THE BEST WAY TO TELL COMMAND BANS AND UI BANS APART
+            Throw New NotImplementedException
         End Function
 
         Public Sub LogMemberBan()
             ' FIGURE OUT THE BEST WAY TO TELL COMMAND BANS AND UI BANS APART
+            Throw New NotImplementedException
         End Sub
 
         Private Function LogUserUnban(e As GuildBanRemoveEventArgs) As Task
-
+            Throw New NotImplementedException
         End Function
 
         Public Sub LogUserUnban()
-
+            Throw New NotImplementedException
         End Sub
-
-        Private Function LogMemberJoin(arg As GuildMemberAddEventArgs) As Task
-
-        End Function
-
-        Private Function LogMemberLeave(arg As GuildMemberRemoveEventArgs) As Task
-
-        End Function
-
-        Private Function LogMessageDeletion(arg As MessageDeleteEventArgs) As Task
-
-        End Function
-
-        Private Function LogMessageEdit(arg As MessageUpdateEventArgs) As Task
-
-        End Function
-
-        Private Function LogMemberChange(arg As GuildMemberUpdateEventArgs) As Task
-
-        End Function
-
-        Private Function LogVoiceChange(arg As VoiceStateUpdateEventArgs) As Task
-
-        End Function
     End Class
 End Namespace
