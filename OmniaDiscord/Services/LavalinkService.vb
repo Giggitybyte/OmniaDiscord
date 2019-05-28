@@ -38,6 +38,8 @@ Namespace Services
                                                        Return Task.CompletedTask
                                                    End Function
 
+            AddHandler shardedClient.VoiceStateUpdated, AddressOf VoiceDisconnectedHandlerAsync
+
             _omniaConfig = config
             _logger = logger
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
@@ -67,10 +69,23 @@ Namespace Services
                 AddHandler _nodeConnection.PlaybackFinished, AddressOf PlaybackFinishedHandler
                 AddHandler _nodeConnection.TrackException, AddressOf TrackExceptionHandler
                 AddHandler _nodeConnection.TrackStuck, AddressOf TrackStuckHandler
-                AddHandler _nodeConnection.Disconnected, AddressOf DisconnectedHandler
+                AddHandler _nodeConnection.Disconnected, AddressOf NodeDisconnectHandler
                 AddHandler _nodeConnection.LavalinkSocketErrored, AddressOf LavalinkSocketErroredHandler
             End If
         End Sub
+
+        Private Async Function VoiceDisconnectedHandlerAsync(e As VoiceStateUpdateEventArgs) As Task
+            If Not e.User.IsCurrent AndAlso e.After.Channel IsNot Nothing Then Return
+            Dim guildConnection = Await _nodeConnection?.ConnectAsync(e.Before.Channel)
+            If guildConnection Is Nothing Then Return
+
+            guildConnection.Stop()
+            guildConnection.SetVolume(100)
+            guildConnection.ResetEqualizer()
+            guildConnection.Disconnect()
+
+            _GuildInfo(e.Guild.Id).ResetTrackData()
+        End Function
 
         Public Async Function PlayNextTrackAsync(guild As DiscordGuild) As Task(Of Boolean)
             _GuildInfo(guild.Id).MediaQueue.TryDequeue(_GuildInfo(guild.Id).CurrentTrack)
@@ -94,7 +109,7 @@ Namespace Services
             Return False
         End Function
 
-        Private Async Function DisconnectedHandler(e As NodeDisconnectedEventArgs) As Task
+        Private Async Function NodeDisconnectHandler(e As NodeDisconnectedEventArgs) As Task
             Await _logger.PrintAsync(LogLevel.Warning, "Lavalink Service", "Luke implement auto reconnect you fuck.")
         End Function
 

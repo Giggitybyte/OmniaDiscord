@@ -74,7 +74,7 @@ Public Class Bot
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
             '.AddSingleton(Of GuildLogService)
-            .AddSingleton(Of LobbySystemService)
+            '.AddSingleton(Of LobbySystemService)
             .AddSingleton(Of MediaRetrievalService)
 
             _services = .BuildServiceProvider
