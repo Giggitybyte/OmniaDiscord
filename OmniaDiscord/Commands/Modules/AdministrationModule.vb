@@ -30,7 +30,9 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, targetMember As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim member = (Await _memberConverter.ConvertAsync(targetMember, ctx)).Value
+            Dim convert = Await _memberConverter.ConvertAsync(targetMember, ctx)
+            Dim member = If(convert.HasValue, convert.Value, Nothing)
+
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.Member.Id Then embed.Description = "You cannot kick yourself!"
@@ -49,7 +51,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim user = (Await _userConverter.ConvertAsync(targetUser, ctx)).Value
+            Dim convert = Await _userConverter.ConvertAsync(targetUser, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
             If user Is Nothing Then embed.Description = "The user you specified was either invalid or does not exist."
             If user?.Id = ctx.User.Id Then embed.Description = "You cannot ban yourself!"
@@ -69,7 +72,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim member = (Await _memberConverter.ConvertAsync(targetUser, ctx)).Value
+            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
+            Dim member = If(convert.HasValue, convert.Value, Nothing)
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot soft ban yourself!"
@@ -93,7 +97,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function UnbanCommand(ctx As CommandContext, userId As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim user = (Await _userConverter.ConvertAsync(userId, ctx)).Value
+            Dim convert = Await _userConverter.ConvertAsync(userId, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
             If user Is Nothing Then embed.Description = "The user you specified was either invalid or does not exist."
             If user?.id = ctx.User.Id Then embed.Description = "You cannot unban yourself!"
@@ -119,7 +124,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function MuteCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim member = (Await _memberConverter.ConvertAsync(targetUser, ctx)).Value
+            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
+            Dim member = If(convert.HasValue, convert.Value, Nothing)
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
@@ -142,7 +148,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function UnmuteCommand(ctx As CommandContext, targetUser As String) As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim member = (Await _memberConverter.ConvertAsync(targetUser, ctx)).Value
+            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
+            Dim member = If(convert.HasValue, convert.Value, Nothing)
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
@@ -196,7 +203,8 @@ Namespace Commands.Modules
             Public Async Function RemoveMessagesFromSpecificUserCommand(ctx As CommandContext, targetUser As String, Optional messageCount As ULong = 100) As Task
                 Await ctx.TriggerTypingAsync
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim user = (Await New DiscordUserConverter().ConvertAsync(targetUser, ctx)).Value
+                Dim convert = Await New DiscordUserConverter().ConvertAsync(targetUser, ctx)
+                Dim user = If(convert.HasValue, convert.Value, Nothing)
 
                 If user Is Nothing Then
                     With embed
