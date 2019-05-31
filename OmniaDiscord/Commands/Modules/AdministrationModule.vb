@@ -34,7 +34,7 @@ Namespace Commands.Modules
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.Member.Id Then embed.Description = "You cannot kick yourself!"
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
@@ -53,7 +53,7 @@ Namespace Commands.Modules
 
             If user Is Nothing Then embed.Description = "The user you specified was either invalid or does not exist."
             If user?.Id = ctx.User.Id Then embed.Description = "You cannot ban yourself!"
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
@@ -73,7 +73,7 @@ Namespace Commands.Modules
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot soft ban yourself!"
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
@@ -101,7 +101,7 @@ Namespace Commands.Modules
             Dim userBan As DiscordBan = (Await ctx.Guild.GetBansAsync).FirstOrDefault(Function(b) b.User.Id = user.Id)
             If userBan Is Nothing Then embed.Description = "The user you specified is not currently banned."
 
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
@@ -124,7 +124,7 @@ Namespace Commands.Modules
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
             If GuildData.MutedMembers.Contains(member.Id) Then embed.Description = "The user you specified is already muted."
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
@@ -147,7 +147,7 @@ Namespace Commands.Modules
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
             If Not GuildData.MutedMembers.Contains(member?.Id) Then embed.Description = "The user you specified is not currently muted."
-            If embed.Description.Any Then
+            If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
