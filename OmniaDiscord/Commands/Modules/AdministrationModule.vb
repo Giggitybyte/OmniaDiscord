@@ -41,7 +41,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await member.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+            Await member.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -61,7 +61,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await ctx.Guild.BanMemberAsync($"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+            Await ctx.Guild.BanMemberAsync($"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -82,7 +82,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await ctx.Guild.BanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+            Await ctx.Guild.BanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
@@ -114,7 +114,7 @@ Namespace Commands.Modules
             Dim cts As CancellationTokenSource
             If _softBanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
-            Await ctx.Guild.UnbanMemberAsync($"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+            Await ctx.Guild.UnbanMemberAsync($"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
