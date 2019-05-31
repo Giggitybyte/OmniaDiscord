@@ -73,7 +73,6 @@ Public Class Bot
             .AddSingleton(Of MuteService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
-            '.AddSingleton(Of GuildLogService)
             '.AddSingleton(Of LobbySystemService)
             .AddSingleton(Of MediaRetrievalService)
 
