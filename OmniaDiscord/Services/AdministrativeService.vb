@@ -1,11 +1,14 @@
-﻿Imports DSharpPlus
+﻿Imports System.Collections.Concurrent
+Imports System.Threading
+Imports DSharpPlus
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
 Imports OmniaDiscord.Entities.Database
 
 Namespace Services
-    Public Class MuteService
+    Public Class AdministrativeService
         Private _db As DatabaseService
+        Public ReadOnly Property SoftbanTokens As New ConcurrentDictionary(Of ULong, CancellationTokenSource)
 
         Sub New(client As DiscordShardedClient, db As DatabaseService)
             AddHandler client.TypingStarted, AddressOf MutedUserTypingHandlerAsync
@@ -18,7 +21,17 @@ Namespace Services
             If Not _db.DoesContainGuild(arg.Guild.Id) Then Return
 
             Dim guild As GuildData = _db.GetGuildData(arg.Guild.Id)
-            If guild.MutedMembers.Contains(arg.User.Id) AndAlso Not arg.After.IsServerMuted Then Await DirectCast(arg.User, DiscordMember).SetMuteAsync(True)
+            If guild.MutedMembers.Contains(arg.User.Id) Then
+                Dim member = DirectCast(arg.User, DiscordMember)
+                Await member.SetMuteAsync(True)
+
+                Dim chanOverwrites As List(Of DiscordOverwrite) = arg.After.Channel.PermissionOverwrites.ToList
+                Dim userOverwrite As DiscordOverwrite = chanOverwrites.FirstOrDefault(Function(o) o.GetMemberAsync.Id = member.Id)
+
+                Await arg.Channel.AddOverwriteAsync(member,
+                                                    If(userOverwrite?.Allowed, Permissions.None) And Permissions.Speak,
+                                                    If(userOverwrite?.Denied, Permissions.None) Or Permissions.Speak)
+            End If
         End Function
 
         Private Async Function MutedUserTextHandlerAsync(arg As MessageCreateEventArgs) As Task

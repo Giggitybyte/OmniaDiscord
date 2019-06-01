@@ -13,13 +13,12 @@ Namespace Commands.Modules
     Public Class AdministrationModule
         Inherits OmniaCommandBase
 
-        Private _muteService As MuteService
-        Private _softBanTokens As ConcurrentDictionary(Of ULong, CancellationTokenSource)
+        Private _adminService As AdministrativeService
         Private _userConverter As DiscordUserConverter
         Private _memberConverter As DiscordMemberConverter
 
-        Sub New(muteService As MuteService)
-            _muteService = muteService
+        Sub New(adminService As AdministrativeService)
+            _adminService = adminService
             _userConverter = New DiscordUserConverter
             _memberConverter = New DiscordMemberConverter
         End Sub
@@ -41,7 +40,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await member.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
+            Await member.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -61,13 +60,13 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await ctx.Guild.BanMemberAsync($"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
+            Await ctx.Guild.BanMemberAsync(user.Id, reason:=$"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
 #Disable Warning BC42358
         <Command("softban"), Aliases("sban")>
-        <Description("Bans a user then unbans them after five minutes.")>
+        <Description("Bans then unbans a user after five minutes.")>
         <RequireBotPermissions(Permissions.BanMembers)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
@@ -82,11 +81,12 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Await ctx.Guild.BanMemberAsync($"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
+            Dim auditLog = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
+            Await ctx.Guild.BanMemberAsync(member.Id, reason:=auditLog)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
-            _softBanTokens.TryAdd(ctx.Guild.Id, cts)
+            _adminService.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
             Task.Delay(300000, cts.Token).ContinueWith(Sub() ctx.Guild.UnbanMemberAsync(member.Id, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
         End Function
 #Enable Warning BC42358
@@ -112,9 +112,9 @@ Namespace Commands.Modules
             End If
 
             Dim cts As CancellationTokenSource
-            If _softBanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
+            If _adminService.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
-            Await ctx.Guild.UnbanMemberAsync($"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
+            Await ctx.Guild.UnbanMemberAsync(user.Id, $"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -129,7 +129,7 @@ Namespace Commands.Modules
 
             If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
-            If GuildData.MutedMembers.Contains(member.Id) Then embed.Description = "The user you specified is already muted."
+            If GuildData.MutedMembers.Contains(member?.Id) Then embed.Description = "The user you specified is already muted."
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
@@ -138,7 +138,9 @@ Namespace Commands.Modules
             GuildData.MutedMembers.Add(member.Id)
             UpdateGuildData()
 
-            Await member.SetMuteAsync($"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). {If(reason, "")}")
+            Dim auditLog = $"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
+            If Not member.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(True, auditLog)
+
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -161,7 +163,7 @@ Namespace Commands.Modules
 
             GuildData.MutedMembers.Remove(member.Id)
             UpdateGuildData()
-            Await member.SetMuteAsync(False, $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator}")
+            If member.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(False, $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
 
             Await ctx.TriggerTypingAsync
 
@@ -172,9 +174,23 @@ Namespace Commands.Modules
 
             Dim message As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
 
-            For Each channel As DiscordChannel In (Await ctx.Guild.GetChannelsAsync)
+            Dim channels = (Await ctx.Guild.GetChannelsAsync)
+            For Each channel In channels
                 For Each chnOverwrite As DiscordOverwrite In channel.PermissionOverwrites
-                    If chnOverwrite.Type = OverwriteType.Member AndAlso (Await chnOverwrite.GetMemberAsync).Id = member.Id Then Await chnOverwrite.DeleteAsync
+                    If chnOverwrite.Type = OverwriteType.Member AndAlso (Await chnOverwrite.GetMemberAsync).Id = member.Id Then
+                        Dim perms As Permissions
+
+                        Select Case chnOverwrite.Type
+                            Case ChannelType.Category
+                                perms = Permissions.AddReactions Or Permissions.ReadMessageHistory Or Permissions.Speak
+                            Case ChannelType.Text
+                                perms = Permissions.AddReactions Or Permissions.ReadMessageHistory
+                            Case ChannelType.Voice
+                                perms = Permissions.Speak
+                        End Select
+
+                        Await chnOverwrite.UpdateAsync(deny:=chnOverwrite.Denied And perms)
+                    End If
                 Next
             Next
 
