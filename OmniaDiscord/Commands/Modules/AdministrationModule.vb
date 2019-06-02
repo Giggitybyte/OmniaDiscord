@@ -12,12 +12,10 @@ Namespace Commands.Modules
     Public Class AdministrationModule
         Inherits OmniaCommandBase
 
-        Private _adminService As AdministrativeService
-        Private _userConverter As DiscordUserConverter
+        Private _softban As SoftbanTokenService
 
-        Sub New(adminService As AdministrativeService)
-            _adminService = adminService
-            _userConverter = New DiscordUserConverter
+        Sub New(softban As SoftbanTokenService)
+            _softban = softban
         End Sub
 
         <Command("kick")>
@@ -52,7 +50,7 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
-            _adminService.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
+            _softban.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
             Task.Delay(300000, cts.Token).ContinueWith(Sub() ctx.Guild.UnbanMemberAsync(user.Id, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
         End Function
 #Enable Warning BC42358
@@ -67,64 +65,9 @@ Namespace Commands.Modules
             If userBan Is Nothing Then Return
 
             Dim cts As CancellationTokenSource
-            If _adminService.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
+            If _softban.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
             Await ctx.Guild.UnbanMemberAsync(userId.Id, $"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
-            Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
-        End Function
-
-        <Command("mute")>
-        <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
-        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles)>
-        <RequireTitle(GuildTitle.Helper)>
-        Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
-            If user Is Nothing OrElse user.Id = ctx.User.Id OrElse GuildData.MutedMembers.Contains(If(user?.Id, 0)) Then Return
-
-            GuildData.MutedMembers.Add(user.Id)
-            UpdateGuildData()
-
-            Dim auditLog = $"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
-            If Not ctx.Guild.Members(user.Id).VoiceState?.IsServerMuted Then Await ctx.Guild.Members(user.Id).SetMuteAsync(True, auditLog)
-
-            Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
-        End Function
-
-        <Command("unmute")>
-        <Description("Allows a previously muted user to speak and send messages.")>
-        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles)>
-        <RequireTitle(GuildTitle.Moderator)>
-        Public Async Function UnmuteCommand(ctx As CommandContext, user As DiscordMember) As Task
-            If user Is Nothing OrElse user?.Id = ctx.User.Id OrElse Not GuildData.MutedMembers.Contains(If(user?.Id, 0)) Then Return
-
-            GuildData.MutedMembers.Remove(user.Id)
-            UpdateGuildData()
-
-            Dim member = ctx.Guild.Members(user.Id)
-            If member?.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(False, $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
-
-            Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":hourglass:"))
-
-            Dim channels = (Await ctx.Guild.GetChannelsAsync)
-            For Each channel In channels
-                For Each chnOverwrite As DiscordOverwrite In channel.PermissionOverwrites
-                    If chnOverwrite.Type = OverwriteType.Member AndAlso (Await chnOverwrite.GetMemberAsync).Id = member.Id Then
-                        Dim perms As Permissions
-
-                        Select Case chnOverwrite.Type
-                            Case ChannelType.Category
-                                perms = Permissions.AddReactions Or Permissions.ReadMessageHistory Or Permissions.Speak
-                            Case ChannelType.Text
-                                perms = Permissions.AddReactions Or Permissions.ReadMessageHistory
-                            Case ChannelType.Voice
-                                perms = Permissions.Speak
-                        End Select
-
-                        Await chnOverwrite.UpdateAsync(deny:=chnOverwrite.Denied And perms)
-                    End If
-                Next
-            Next
-
-            Await ctx.Message.DeleteOwnReactionAsync(DiscordEmoji.FromName(ctx.Client, ":hourglass:"))
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
