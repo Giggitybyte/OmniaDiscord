@@ -1,5 +1,4 @@
-﻿Imports System.Collections.Concurrent
-Imports System.Threading
+﻿Imports System.Threading
 Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
@@ -15,12 +14,10 @@ Namespace Commands.Modules
 
         Private _adminService As AdministrativeService
         Private _userConverter As DiscordUserConverter
-        Private _memberConverter As DiscordMemberConverter
 
         Sub New(adminService As AdministrativeService)
             _adminService = adminService
             _userConverter = New DiscordUserConverter
-            _memberConverter = New DiscordMemberConverter
         End Sub
 
         <Command("kick")>
@@ -29,18 +26,18 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, targetMember As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim convert = Await _memberConverter.ConvertAsync(targetMember, ctx)
-            Dim member = If(convert.HasValue, convert.Value, Nothing)
+            Dim convert = Await _userConverter.ConvertAsync(targetMember, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
 
-            If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
-            If member?.Id = ctx.Member.Id Then embed.Description = "You cannot kick yourself!"
+            If user Is Nothing OrElse Not ctx.Guild.Members.ContainsKey(user.Id) Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
+            If user?.Id = ctx.Member.Id Then embed.Description = "You cannot kick yourself!"
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
 
-            Await member.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
+            Await ctx.Guild.Members(user.Id).RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -71,23 +68,23 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
-            Dim member = If(convert.HasValue, convert.Value, Nothing)
+            Dim convert = Await _userConverter.ConvertAsync(targetUser, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
-            If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
-            If member?.Id = ctx.User.Id Then embed.Description = "You cannot soft ban yourself!"
+            If user Is Nothing Then embed.Description = "The user you specified was either invalid or does not exist."
+            If user?.Id = ctx.User.Id Then embed.Description = "You cannot soft ban yourself!"
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
 
             Dim auditLog = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
-            Await ctx.Guild.BanMemberAsync(member.Id, reason:=auditLog)
+            Await ctx.Guild.BanMemberAsync(user.Id, reason:=auditLog)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
             _adminService.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
-            Task.Delay(300000, cts.Token).ContinueWith(Sub() ctx.Guild.UnbanMemberAsync(member.Id, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
+            Task.Delay(300000, cts.Token).ContinueWith(Sub() ctx.Guild.UnbanMemberAsync(user.Id, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
         End Function
 #Enable Warning BC42358
 
@@ -124,22 +121,22 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function MuteCommand(ctx As CommandContext, targetUser As String, <RemainingText> Optional reason As String = "") As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
-            Dim member = If(convert.HasValue, convert.Value, Nothing)
+            Dim convert = Await _userConverter.ConvertAsync(targetUser, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
-            If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
-            If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
-            If GuildData.MutedMembers.Contains(member?.Id) Then embed.Description = "The user you specified is already muted."
+            If user Is Nothing OrElse Not ctx.Guild.Members.ContainsKey(user.Id) Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
+            If user?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
+            If GuildData.MutedMembers.Contains(user?.Id) Then embed.Description = "The user you specified is already muted."
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
 
-            GuildData.MutedMembers.Add(member.Id)
+            GuildData.MutedMembers.Add(user.Id)
             UpdateGuildData()
 
             Dim auditLog = $"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
-            If Not member.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(True, auditLog)
+            If Not ctx.Guild.Members(user.Id).VoiceState?.IsServerMuted Then Await ctx.Guild.Members(user.Id).SetMuteAsync(True, auditLog)
 
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
@@ -150,20 +147,21 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function UnmuteCommand(ctx As CommandContext, targetUser As String) As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-            Dim convert = Await _memberConverter.ConvertAsync(targetUser, ctx)
-            Dim member = If(convert.HasValue, convert.Value, Nothing)
+            Dim convert = Await _userConverter.ConvertAsync(targetUser, ctx)
+            Dim user = If(convert.HasValue, convert.Value, Nothing)
 
-            If member Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
-            If member?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
-            If Not GuildData.MutedMembers.Contains(member?.Id) Then embed.Description = "The user you specified is not currently muted."
+            If user Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
+            If user?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
+            If Not GuildData.MutedMembers.Contains(user?.Id) Then embed.Description = "The user you specified is not currently muted."
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
 
-            GuildData.MutedMembers.Remove(member.Id)
+            GuildData.MutedMembers.Remove(user.Id)
             UpdateGuildData()
-            If member.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(False, $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+            Dim member = ctx.Guild.Members(user.Id)
+            If member?.VoiceState?.IsServerMuted Then Await member.SetMuteAsync(False, $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
 
             Await ctx.TriggerTypingAsync
 
