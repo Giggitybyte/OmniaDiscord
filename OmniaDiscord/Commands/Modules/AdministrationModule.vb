@@ -63,7 +63,7 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function UnbanCommand(ctx As CommandContext, userId As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If userId.Id = ctx.Member.Id Then Return
-            Dim userBan As DiscordBan = (Await ctx.Guild.GetBansAsync).FirstOrDefault(Function(b) b.User.Id = user.Id)
+            Dim userBan As DiscordBan = (Await ctx.Guild.GetBansAsync).FirstOrDefault(Function(b) b.User.Id = userId.Id)
             If userBan Is Nothing Then Return
 
             Dim cts As CancellationTokenSource
