@@ -126,7 +126,7 @@ Namespace Commands.Modules
 
             If user Is Nothing OrElse Not ctx.Guild.Members.ContainsKey(user.Id) Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If user?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
-            If GuildData.MutedMembers.Contains(user?.Id) Then embed.Description = "The user you specified is already muted."
+            If GuildData.MutedMembers.Contains(If(user?.Id, 0)) Then embed.Description = "The user you specified is already muted."
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
@@ -152,7 +152,7 @@ Namespace Commands.Modules
 
             If user Is Nothing Then embed.Description = "The user you specified either is not in this server, or doesn't exist."
             If user?.Id = ctx.User.Id Then embed.Description = "You cannot mute yourself!"
-            If Not GuildData.MutedMembers.Contains(user?.Id) Then embed.Description = "The user you specified is not currently muted."
+            If Not GuildData.MutedMembers.Contains(If(user?.Id, 0)) Then embed.Description = "The user you specified is not currently muted."
             If embed.Description?.Any Then
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
