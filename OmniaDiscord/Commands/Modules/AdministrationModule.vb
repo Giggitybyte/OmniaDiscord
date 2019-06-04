@@ -44,7 +44,7 @@ Namespace Commands.Modules
             End If
 
             Dim logReason = $"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
-            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", reason.Take(512 - logReason.Count).ToString())
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
 
             Await user.GrantRoleAsync(role, logReason)
             If Not ctx.Guild.Members(user.Id).VoiceState?.IsServerMuted Then Await ctx.Guild.Members(user.Id).SetMuteAsync(True, logReason)
@@ -81,7 +81,11 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
-            Await user.RemoveAsync($"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
+
+            Dim logReason = $"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
+
+            Await user.RemoveAsync(logReason)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -91,7 +95,11 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
-            Await ctx.Guild.BanMemberAsync(user.Id, reason:=$"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
+
+            Dim logReason = $"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
+
+            Await ctx.Guild.BanMemberAsync(user.Id, reason:=logReason)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
@@ -102,8 +110,11 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
-            Dim auditLog = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}"
-            Await ctx.Guild.BanMemberAsync(user.Id, reason:=auditLog)
+
+            Dim logReason = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
+
+            Await ctx.Guild.BanMemberAsync(user.Id, reason:=logReason)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
@@ -124,7 +135,10 @@ Namespace Commands.Modules
             Dim cts As CancellationTokenSource
             If _adminService.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
-            Await ctx.Guild.UnbanMemberAsync(userId.Id, $"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
+            Dim logReason = $"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
+
+            Await ctx.Guild.UnbanMemberAsync(userId.Id, logReason)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
