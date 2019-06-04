@@ -3,12 +3,16 @@ Imports System.Net
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Threading
+Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
+''' <summary>
+''' A collection of methods that have use across multiple classes.
+''' </summary>
 Public Class Utilities
 
     Public Shared Function InlineAssignHelper(Of T)(ByRef target As T, value As T) As T

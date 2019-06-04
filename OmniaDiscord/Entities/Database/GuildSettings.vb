@@ -7,6 +7,7 @@
 
         Public Property Prefix As String ' The prefix currently set for this guild.
         Public Property LogChannelId As ULong ' The text channel for log output for this guild.
+        Public Property MutedRoleId As ULong ' The role to be used for muted users.
 
         Public Property IsDjWhitelistEnabled As Boolean ' Whether or not music commands are restricted.
         Public Property IsVoteToSkipEnabled As Boolean ' Whether or not a vote is needed to skip an audio track.

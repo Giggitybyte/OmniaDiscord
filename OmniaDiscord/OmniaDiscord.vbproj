@@ -32,7 +32,6 @@
     <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00600" />
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00600" />
     <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00600" />
-    <PackageReference Include="DSharpPlus.VoiceNext" Version="4.0.0-nightly-00600" />
     <PackageReference Include="FluentCommandLineParser.NETStandard" Version="1.5.0.31-commands" />
     <PackageReference Include="Google.Apis.YouTube.v3" Version="1.40.0.1593" />
     <PackageReference Include="LiteDB" Version="4.1.4" />

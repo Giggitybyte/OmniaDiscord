@@ -13,5 +13,10 @@ Namespace Commands.Modules
 
         End Function
 
+        <Command("remove")>
+        Public Async Function RemoveLobbyCommand(ctx As CommandContext, channel As DiscordChannel) As Task
+
+        End Function
+
     End Class
 End Namespace

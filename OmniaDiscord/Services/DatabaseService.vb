@@ -75,13 +75,7 @@ Namespace Services
             Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
             Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
 
-            If guildData.Exists(Function(d) d.GuildId = guildId) And
-               guildSettings.Exists(Function(s) s.GuildId = guildId) Then
-
-                Return True
-            End If
-
-            Return False
+            Return guildData.Exists(Function(d) d.GuildId = guildId) And guildSettings.Exists(Function(s) s.GuildId = guildId)
         End Function
 
     End Class

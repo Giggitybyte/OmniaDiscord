@@ -12,11 +12,68 @@ Namespace Commands.Modules
     Public Class AdministrationModule
         Inherits OmniaCommandBase
 
-        Private _softban As SoftbanTokenService
+        Private _adminService As AdministrationService
 
-        Sub New(softban As SoftbanTokenService)
-            _softban = softban
+        Sub New(adminService As AdministrationService)
+            _adminService = adminService
         End Sub
+
+        <Command("mute")>
+        <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
+        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.ManageChannels)>
+        <RequireTitle(GuildTitle.Helper)>
+        Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
+            Dim role As DiscordRole
+
+            If GuildSettings.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(GuildSettings.MutedRoleId) Then
+                Dim message = Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Orange, .Description = "Configuring muted role..."})
+                role = Await _adminService.CreateGuildMutedRoleAsync(ctx.Guild)
+                Await message.DeleteAsync
+            End If
+
+            If role Is Nothing Then role = ctx.Guild.Roles(GuildSettings.MutedRoleId)
+
+            If user.Id = ctx.Member.Id Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "You cannot mute yourself."})
+                Return
+            End If
+
+            If GuildData.MutedMembers.Contains(user.Id) AndAlso user.Roles.FirstOrDefault(Function(r) r.Id = role.Id) IsNot Nothing Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "This user is already muted."})
+                Return
+            End If
+
+            Dim logReason = $"muted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
+            logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", reason.Take(512 - logReason.Count).ToString())
+
+            Await user.GrantRoleAsync(role, logReason)
+            If Not ctx.Guild.Members(user.Id).VoiceState?.IsServerMuted Then Await ctx.Guild.Members(user.Id).SetMuteAsync(True, logReason)
+
+            GuildData.MutedMembers.Add(user.Id)
+            UpdateGuildData()
+
+            Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
+        End Function
+
+        <Command("unmute")>
+        <Description("Allows a previously muted user to speak and send messages.")>
+        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles)>
+        <RequireTitle(GuildTitle.Moderator)>
+        Public Async Function UnmuteCommand(ctx As CommandContext, user As DiscordMember) As Task
+            If Not GuildData.MutedMembers.Contains(user.Id) Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "This user is not muted."})
+                Return
+            End If
+
+            GuildData.MutedMembers.Remove(user.Id)
+            UpdateGuildData()
+
+            Dim logReason = $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})"
+            If ctx.Guild.Roles.ContainsKey(GuildSettings.MutedRoleId) Then Await user.RevokeRoleAsync(ctx.Guild.Roles(GuildSettings.MutedRoleId), logReason)
+            If user.VoiceState?.IsServerMuted Then Await user.SetMuteAsync(False, logReason)
+
+            Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
+        End Function
 
         <Command("kick")>
         <Description("Kicks a user from the server.")>
@@ -50,7 +107,7 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
 
             Dim cts As New CancellationTokenSource
-            _softban.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
+            _adminService.SoftbanTokens.TryAdd(ctx.Guild.Id, cts)
             Task.Delay(300000, cts.Token).ContinueWith(Sub() ctx.Guild.UnbanMemberAsync(user.Id, "Soft ban ended"), TaskContinuationOptions.NotOnCanceled)
         End Function
 #Enable Warning BC42358
@@ -65,7 +122,7 @@ Namespace Commands.Modules
             If userBan Is Nothing Then Return
 
             Dim cts As CancellationTokenSource
-            If _softban.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
+            If _adminService.SoftbanTokens.TryRemove(ctx.Guild.Id, cts) Then cts.Cancel()
 
             Await ctx.Guild.UnbanMemberAsync(userId.Id, $"unbanned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: {If(reason?.Any, reason, "None.")}")
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
