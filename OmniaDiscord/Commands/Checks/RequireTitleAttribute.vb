@@ -20,25 +20,17 @@ Namespace Commands.Checks
         End Sub
 
         Public Overrides Function ExecuteCheckAsync(ctx As CommandContext, help As Boolean) As Task(Of Boolean)
-            ' Check if user is the guild owner
             If ctx.Guild.Owner.Id = ctx.Member.Id Then Return Task.FromResult(True)
 
             Dim data As GuildData = ctx.Services.GetRequiredService(Of DatabaseService).GetGuildData(ctx.Guild.Id)
-            Dim validTitles As New List(Of GuildTitle)
+            If Not data.StaffTitles.ContainsKey(ctx.Member.Id) Then Return Task.FromResult(False)
 
-            ' Get the minimum title and all titles above it.
+            Dim validTitles As New List(Of GuildTitle)
             For Each title As GuildTitle In [Enum].GetValues(GetType(GuildTitle)).Cast(Of GuildTitle)
                 If title >= _MinimumTitle Then validTitles.Add(title)
             Next
 
-            ' See if the user has any valid titles.
-            For Each title As GuildTitle In validTitles
-                For Each userId As ULong In data.StaffTitles(title)
-                    If ctx.Member.Id = userId Then Return Task.FromResult(True)
-                Next
-            Next
-
-            Return Task.FromResult(False)
+            Return Task.FromResult(validTitles.Contains(data.StaffTitles(ctx.Member.Id)))
         End Function
 
     End Class

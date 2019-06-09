@@ -8,11 +8,8 @@ Namespace Commands.Checks
         Inherits CheckBaseAttribute
 
         Public Overrides Function ExecuteCheckAsync(ctx As CommandContext, help As Boolean) As Task(Of Boolean)
-            If ctx.Guild.Owner.Id = ctx.Member.Id Then
-                Return Task.FromResult(True)
-            Else
-                Return Task.FromResult(False)
-            End If
+            If ctx.Guild.Owner.Id = ctx.Member.Id Then Return Task.FromResult(True)
+            Return Task.FromResult(False)
         End Function
 
     End Class
