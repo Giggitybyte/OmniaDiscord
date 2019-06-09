@@ -58,7 +58,7 @@ Namespace Commands.Modules
         <Command("unmute")>
         <Description("Allows a previously muted user to speak and send messages.")>
         <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles)>
-        <RequireTitle(GuildTitle.Moderator)>
+        <RequireTitle(GuildTitle.Helper)>
         Public Async Function UnmuteCommand(ctx As CommandContext, user As DiscordMember) As Task
             If Not GuildData.MutedMembers.Contains(user.Id) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "This user is not muted."})

@@ -90,7 +90,7 @@ Namespace Commands.Modules
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
-        <Command("remove"), RequireStaff>
+        <Command("strip"), RequireStaff>
         <Description("Removes the current title of a user.")>
         Public Async Function RemoveTitle(ctx As CommandContext, user As DiscordMember) As Task
             Await ctx.TriggerTypingAsync()
