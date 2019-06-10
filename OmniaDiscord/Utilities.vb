@@ -7,6 +7,7 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
+Imports Humanizer
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
@@ -107,48 +108,12 @@ Public Class Utilities
     End Function
 
     ''' <summary>
-    ''' Takes a <see cref="TimeSpan"/> and converts it into human readable text.
-    ''' </summary>
-    Public Shared Function FormatTimespanToString(time As TimeSpan, Optional notRestrictedToHours As Boolean = False) As String
-        If notRestrictedToHours Then
-            If (Math.Floor(time.Days / 365) <> 0) Then
-                Return $"{(time.Days / 365).ToString("N0")}y {((time.Days Mod 365) / 30).ToString("N0")}m"
-            End If
-
-            If (Math.Floor(time.Days / 30) <> 0) Then
-                Return $"{(time.Days / 30).ToString("N1")}m"
-            End If
-
-            If time.Days > 0 Then
-                If time.Hours > 0 Then Return time.ToString("d\d\ h\h")
-                Return time.ToString("d\d")
-            End If
-        Else
-            If time.Days > 0 Then Return $"{time.TotalHours.ToString("N0")}h {time.Minutes.ToString}m"
-        End If
-
-        If time.Hours > 0 Then
-            If time.Minutes > 0 Then Return time.ToString("h\h\ m\m")
-            Return time.ToString("h\h")
-        End If
-
-        If time.Minutes > 0 Then
-            If time.Seconds > 0 Then Return time.ToString("m\m\ s\s")
-            Return time.ToString("m\m")
-        Else
-            If time.Milliseconds > 0 Then Return time.ToString("s\.f\s")
-            Return time.ToString("s\s")
-        End If
-    End Function
-
-    ''' <summary>
     ''' Adds multiple timespans together.
     ''' </summary>
     Public Shared Function CombineTimespans(timespans As IEnumerable(Of TimeSpan)) As String
         Dim total As New TimeSpan
         total = timespans.Aggregate(total, Function(current, timespan) current.Add(timespan))
-
-        Return FormatTimespanToString(total)
+        Return total.Humanize
     End Function
 
     ''' <summary>

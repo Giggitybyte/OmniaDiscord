@@ -13,6 +13,7 @@ Imports OmniaDiscord.Services
 Imports YoutubeExplode
 Imports YoutubeExplode.Models
 Imports OmniaDiscord.Entities.Media
+Imports Humanizer
 
 Namespace Commands.Modules
 
@@ -496,7 +497,7 @@ Namespace Commands.Modules
             Dim currentTrack As OmniaMediaInfo = _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack
 
             If currentTrack IsNot Nothing Then
-                Dim duration As String = If(currentTrack.Duration.TotalSeconds > 0, Utilities.FormatTimespanToString(currentTrack.Duration), "Unknown")
+                Dim duration As String = If(currentTrack.Duration.TotalSeconds > 0, currentTrack.Duration.Humanize(2), "Unknown")
                 Dim requester As DiscordMember = Await ctx.Guild.GetMemberAsync(currentTrack.Requester)
 
                 With embed
@@ -612,7 +613,7 @@ Namespace Commands.Modules
                         .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}{media.Author}"
                         .ThumbnailUrl = media.ThumbnailUrl
 
-                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{Utilities.FormatTimespanToString(media.Duration)}*"
+                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{media.Duration.Humanize(2)}*"
                     End With
 
                 ElseIf media.Type = OmniaMediaType.Album Or media.Type = OmniaMediaType.Playlist Then
@@ -626,7 +627,7 @@ Namespace Commands.Modules
 
                         .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}"
                         .Description &= $"{media.Author}{Environment.NewLine}{Environment.NewLine}"
-                        .Description &= $"Total Playtime: {Utilities.FormatTimespanToString(media.Duration)}"
+                        .Description &= $"Total Playtime: {media.Duration.Humanize(2)}"
 
                         .ThumbnailUrl = media.ThumbnailUrl
                         .Footer.Text &= $" {media.Type}"

@@ -33,7 +33,7 @@
     <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00600" />
     <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00600" />
     <PackageReference Include="FluentCommandLineParser.NETStandard" Version="1.5.0.31-commands" />
-    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.40.0.1593" />
+    <PackageReference Include="Humanizer.Core" Version="2.6.2" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Overstarch" Version="1.1.0" />
     <PackageReference Include="SkiaSharp" Version="1.68.0" />

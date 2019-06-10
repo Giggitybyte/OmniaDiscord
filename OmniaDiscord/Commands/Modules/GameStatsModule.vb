@@ -3,6 +3,8 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports Humanizer
+Imports Humanizer.Localisation
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Entities.Gamestats
 Imports Overstarch
@@ -112,7 +114,7 @@ Namespace Commands.Modules
                 strBuilder.AppendLine($"Losses: `{stats.Queue.Ranked.Losses.ToString("N0")}`")
                 strBuilder.AppendLine($"Total Matches: `{stats.Queue.Ranked.GamesPlayed.ToString("N0")}`")
                 strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Ranked.Kills / stats.Queue.Ranked.GamesPlayed).ToStringNoRounding}`")
-                strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Ranked.Playtime))}`")
+                strBuilder.AppendLine($"Time Played: `{TimeSpan.FromSeconds(stats.Queue.Ranked.Playtime).Humanize(maxUnit:=TimeUnit.Hour)}`")
 
                 .AddField("Ranked Overall", strBuilder.ToString, True)
                 strBuilder.Clear()
@@ -140,7 +142,7 @@ Namespace Commands.Modules
                 strBuilder.AppendLine($"Losses: `{stats.Queue.Casual.Losses.ToString("N0")}`")
                 strBuilder.AppendLine($"Total Matches: `{stats.Queue.Casual.GamesPlayed.ToString("N0")}`")
                 strBuilder.AppendLine($"K/M Average: `{(stats.Queue.Casual.Kills / stats.Queue.Casual.GamesPlayed).ToStringNoRounding()}`")
-                strBuilder.AppendLine($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(stats.Queue.Casual.Playtime))}`")
+                strBuilder.AppendLine($"Time Played: `{TimeSpan.FromSeconds(stats.Queue.Casual.Playtime).Humanize(maxUnit:=TimeUnit.Hour)}`")
 
                 .AddField("Casual Overall", strBuilder.ToString, True)
                 strBuilder.Clear()
@@ -158,7 +160,7 @@ Namespace Commands.Modules
 
 
                 Dim timeDifference As TimeSpan = Date.Now - ranking.CreatedForDate.ToLocalTime
-                Dim humanizedTime As String = If(timeDifference <= TimeSpan.FromSeconds(10), "A Moment Ago", $"{Utilities.FormatTimespanToString(timeDifference)} ago")
+                Dim humanizedTime As String = If(timeDifference <= TimeSpan.FromSeconds(10), "A Moment Ago", $"{timeDifference.Humanize(maxUnit:=TimeUnit.Hour)} ago")
 
                 .Color = DiscordColor.SpringGreen
                 .ThumbnailUrl = SiegeRanks.GetRankFromId(ranking.Rank).url
@@ -265,7 +267,7 @@ Namespace Commands.Modules
                             Dim qpSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
                             Dim qpMedals As Double = If(owPlayer.Stats(OverwatchGamemode.Quickplay).GetStatExact("All Heroes", "Match Awards", "Medals")?.Value, 0)
 
-                            strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(qpTimePlayed))}`{Environment.NewLine}")
+                            strBuilder.Append($"Time Played: `{TimeSpan.FromSeconds(qpTimePlayed).Humanize(maxUnit:=TimeUnit.Hour)}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{qpGamesWon.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"K/D Ratio: `{(qpElims / qpDeaths).ToStringNoRounding}`{Environment.NewLine}")
                             strBuilder.Append($"Eliminations: `{qpElims.ToString("N0")}`{Environment.NewLine}")
@@ -282,7 +284,7 @@ Namespace Commands.Modules
                             Dim compElims As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Combat", "Eliminations")?.Value, 0)
                             Dim compSoloKills As Double = If(owPlayer.Stats(OverwatchGamemode.Competitive).GetStatExact("All Heroes", "Combat", "Solo Kills")?.Value, 0)
 
-                            strBuilder.Append($"Time Played: `{Utilities.FormatTimespanToString(TimeSpan.FromSeconds(compTimePlayed))}`{Environment.NewLine}")
+                            strBuilder.Append($"Time Played: `{TimeSpan.FromSeconds(compTimePlayed).Humanize(maxUnit:=TimeUnit.Hour)}`{Environment.NewLine}")
                             strBuilder.Append($"Games Played: `{compGamesPlayed.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"Games Won: `{compGamesWon.ToString("N0")}`{Environment.NewLine}")
                             strBuilder.Append($"K/D Ratio: `{(compElims / compDeaths).ToStringNoRounding}`{Environment.NewLine}")
@@ -314,15 +316,14 @@ Namespace Commands.Modules
 #Region "Helper Methods"
         Private Sub FormatOverwatchHeroPlaytime(client As DiscordClient, stats As List(Of OverwatchStat), ByRef strBuilder As StringBuilder)
             Dim sortedStats As List(Of OverwatchStat) = stats.FilterByName("Time Played").OrderByDescending(Function(s) s.Value).Where(Function(s) s.Hero <> "AllHeroes" AndAlso s.Value <> 0).Take(5).ToList
+            If Not sortedStats.Any Then Return
 
-            If sortedStats.Count > 0 Then
-                For Each heroStat In sortedStats
-                    Dim heroName As String = heroStat.Hero
-                    Dim playtime As String = Utilities.FormatTimespanToString(TimeSpan.FromSeconds(heroStat.Value))
+            For Each heroStat In sortedStats
+                Dim heroName As String = heroStat.Hero
+                Dim playtime As String = TimeSpan.FromSeconds(heroStat.Value).Humanize(maxUnit:=TimeUnit.Hour)
 
-                    strBuilder.Append($"{DiscordEmoji.FromName(client, $":omnia_{heroStat.Hero.ToLower}icon:")}{heroName}: `{playtime}`{Environment.NewLine}")
-                Next
-            End If
+                strBuilder.Append($"{DiscordEmoji.FromName(client, $":omnia_{heroStat.Hero.ToLower}icon:")}{heroName}: `{playtime}`{Environment.NewLine}")
+            Next
         End Sub
 #End Region
 

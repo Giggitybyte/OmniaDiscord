@@ -3,6 +3,8 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports Humanizer
+Imports Humanizer.Localisation
 
 Namespace Commands.Modules
 
@@ -30,7 +32,7 @@ Namespace Commands.Modules
                 .AddField("User Count", uniqueUsers.Count.ToString("N0"), True)
                 .AddField("Server Count", ctx.Client.Guilds.Count.ToString("N0"), True)
                 .AddField("Shard Count", ctx.Client.ShardCount, True)
-                .AddField("Uptime", Utilities.FormatTimespanToString(Date.Now - Process.GetCurrentProcess().StartTime), True)
+                .AddField("Uptime", (Date.Now - Process.GetCurrentProcess().StartTime).Humanize(minUnit:=TimeUnit.Second), True)
                 .AddField("Ping", $"{ctx.Client.Ping.ToString("N0")}ms", True)
                 .AddField("DSharpPlus Version", Assembly.GetAssembly(GetType(DiscordClient)).GetName().Version.ToString, True)
             End With
@@ -42,7 +44,6 @@ Namespace Commands.Modules
         <Description("Displays info about this server.")>
         Public Async Function ServerInfoCommand(ctx As CommandContext) As Task
             Dim embed As New DiscordEmbedBuilder
-            Dim creationTimeDifference As TimeSpan = Date.Now - ctx.Guild.CreationTimestamp
 
             With embed
                 .Color = DiscordColor.CornflowerBlue
@@ -53,7 +54,7 @@ Namespace Commands.Modules
                 .AddField("Discord ID", ctx.Guild.Id, True)
                 .AddField("Omnia Shard", ctx.Client.ShardId, True)
                 .AddField("AFK Timer", $"{TimeSpan.FromSeconds(ctx.Guild.AfkTimeout).TotalMinutes} minutes", True)
-                .AddField("Creation Date", $"{ctx.Guild.CreationTimestamp.ToString("g")} ({Utilities.FormatTimespanToString(creationTimeDifference, True)} ago)")
+                .AddField("Creation Date", $"{ctx.Guild.CreationTimestamp.ToString("g")} ({ctx.Guild.CreationTimestamp.ToLocalTime.Humanize})")
 
                 .WithAuthor(ctx.Guild.Name, iconUrl:=ctx.Guild.IconUrl)
             End With
@@ -65,19 +66,14 @@ Namespace Commands.Modules
         <Description("Displays info about a user.")>
         Public Async Function UserInfoCommand(ctx As CommandContext, Optional discordUser As DiscordMember = Nothing) As Task
             If discordUser Is Nothing Then discordUser = ctx.Member
-
-            Dim creationTimeDifference As TimeSpan = Date.Now - discordUser.CreationTimestamp
-            Dim joinTimeDifference As TimeSpan = Date.Now - discordUser.JoinedAt
             Dim embed As New DiscordEmbedBuilder
 
             With embed
                 .Color = DiscordColor.CornflowerBlue
-
                 .AddField("Discord ID", discordUser.Id, True)
                 .AddField("Profile Picture", $"[Direct Link]({discordUser.AvatarUrl})", True)
-                .AddField("Server Join Date", $"{discordUser.JoinedAt.ToString("g")} ({Utilities.FormatTimespanToString(joinTimeDifference, True)} ago)", True)
-                .AddField("Account Creation Date", $"{discordUser.CreationTimestamp.ToString("g")} ({Utilities.FormatTimespanToString(creationTimeDifference, True)} ago)", True)
-
+                .AddField("Server Join Date", $"{discordUser.JoinedAt.ToString("g")} ({discordUser.JoinedAt.ToLocalTime.Humanize})", True)
+                .AddField("Account Creation Date", $"{discordUser.CreationTimestamp.ToString("g")} ({discordUser.CreationTimestamp.ToLocalTime.Humanize})", True)
                 .WithAuthor(discordUser.Username, iconUrl:=discordUser.AvatarUrl)
             End With
 

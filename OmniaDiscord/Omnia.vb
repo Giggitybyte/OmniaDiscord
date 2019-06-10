@@ -9,6 +9,7 @@ Imports DSharpPlus.Entities
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports Fclp
+Imports Humanizer
 Imports Microsoft.Extensions.DependencyInjection
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Commands
@@ -157,7 +158,7 @@ Public Class Bot
 
                 ElseIf TryCast(failedCheck, CooldownAttribute) IsNot Nothing Then
                     Dim check As CooldownAttribute = CType(failedCheck, CooldownAttribute)
-                    Dim remainingTime As String = Utilities.FormatTimespanToString(check.GetRemainingCooldown(arg.Context))
+                    Dim remainingTime As String = check.GetRemainingCooldown(arg.Context).Humanize
                     Dim scope As String = String.Empty
 
                     Select Case check.BucketType
