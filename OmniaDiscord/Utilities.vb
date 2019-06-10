@@ -76,22 +76,6 @@ Public Class Utilities
         Return imageStream
     End Function
 
-    ' TODO: actually make this useful.
-    Public Shared Function TagToTextConverter(user As DiscordMember, message As String, Optional embedSafe As Boolean = False) As String
-        Dim tagList As New Dictionary(Of String, String) From {
-            {"%user%", user.DisplayName},
-            {"%usermention%", If(embedSafe, $"@{user.DisplayName}", user.Mention)},
-            {"%server%", user.Guild.Name}
-        }
-
-        ' TODO: escape stuff that could break an embed or codeblock.
-        For Each tag As KeyValuePair(Of String, String) In tagList
-            message = message.Replace(tag.Key, tag.Value, StringComparison.CurrentCultureIgnoreCase)
-        Next
-
-        Return message
-    End Function
-
     Public Shared Function FixedWidthText(text As String, targetLength As Integer) As String
         If text Is Nothing Then
             Return String.Empty
@@ -105,15 +89,6 @@ Public Class Utilities
         Else
             Return text
         End If
-    End Function
-
-    ''' <summary>
-    ''' Adds multiple timespans together.
-    ''' </summary>
-    Public Shared Function CombineTimespans(timespans As IEnumerable(Of TimeSpan)) As String
-        Dim total As New TimeSpan
-        total = timespans.Aggregate(total, Function(current, timespan) current.Add(timespan))
-        Return total.Humanize
     End Function
 
     ''' <summary>
