@@ -3,9 +3,11 @@ Imports System.Net
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Threading
+Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
+Imports Humanizer
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
@@ -42,7 +44,7 @@ Public Class Utilities
     End Function
 
     ''' <summary>
-    ''' Downloads an SVG file from a URL, renders it, then returns it as a <see cref="Stream"/>.<para/>
+    ''' Downloads an SVG file from a URL, renders it, then returns it as a <see cref="Stream"/><para/>
     ''' Intended for usage with Discord embeds.
     ''' </summary>
     Public Shared Async Function SvgToStreamAsync(svgUrl As String, Optional width As Integer = 512, Optional height As Integer = 512) As Task(Of Stream)
@@ -72,42 +74,6 @@ Public Class Utilities
         canvas.Dispose()
 
         Return imageStream
-    End Function
-
-    ''' <summary>
-    ''' Downloads an SVG file from a URL, renders it, then returns a <see cref="FileInfo"/> for the rendered image.<para/>
-    ''' Intended for usage with Discord embeds.
-    ''' </summary>
-    Public Shared Async Function SvgToImageAsync(svgUrl As String, Optional width As Integer = 512, Optional height As Integer = 512) As Task(Of FileInfo)
-        Dim svg As New SKSvg
-        Dim bitmap As New SKBitmap(width, height)
-        Dim canvas As New SKCanvas(bitmap)
-        Dim svgStream As Stream = New MemoryStream
-        Dim filePath = $"{Directory.GetCurrentDirectory}/Temp/{GenerateRandomChars(16)}"
-        Dim fileStream = File.Create($"{filePath}.png")
-
-        Using wclient As New WebClient
-            Await wclient.DownloadFileTaskAsync(svgUrl, $"{filePath}.svg")
-        End Using
-
-        svg.Load(svgStream)
-        svgStream.Dispose()
-
-        Dim svgMaxSize As Single = MathF.Max(svg.Picture.CullRect.Width, svg.Picture.CullRect.Height)
-        Dim canvasMinSize As Single = MathF.Max(width, height)
-        Dim scaleSize As Single = canvasMinSize / svgMaxSize
-
-        canvas.DrawPicture(svg.Picture, SKMatrix.MakeScale(scaleSize, scaleSize))
-        SKImage.FromBitmap(bitmap).Encode.SaveTo(fileStream)
-
-        fileStream.Close()
-        bitmap.Dispose()
-        canvas.Dispose()
-
-        Dim svgFile As New FileInfo($"{filePath}.svg")
-        svgFile.Delete()
-
-        Return New FileInfo($"{filePath}.png")
     End Function
 
     Public Shared Function FixedWidthText(text As String, targetLength As Integer) As String
