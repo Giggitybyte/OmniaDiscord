@@ -120,9 +120,9 @@ Namespace Commands.Modules
                 strBuilder.Clear()
 
 
-                strBuilder.AppendLine($"Current Rank: `{SiegeRanks.GetRankFromId(ranking.Rank).rankName}`")
+                strBuilder.AppendLine($"Current Rank: `{SiegeRanks.GetNameFromId(ranking.Rank)}`")
                 strBuilder.AppendLine($"Current MMR: `{ranking.Mmr}`")
-                strBuilder.AppendLine($"Highest Rank: `{SiegeRanks.GetRankFromId(ranking.MaxRank).rankName}`")
+                strBuilder.AppendLine($"Highest Rank: `{SiegeRanks.GetNameFromId(ranking.MaxRank)}`")
                 strBuilder.AppendLine($"Highest MMR: `{ranking.MaxMmr}`")
                 strBuilder.AppendLine($"W/L Ratio: `{(ranking.Wins / ranking.Losses).ToStringNoRounding}`")
                 strBuilder.AppendLine($"Wins: `{ranking.Wins.ToString("N0")}`")
@@ -151,7 +151,7 @@ Namespace Commands.Modules
                 For Each season In seasonData.Seasons.Values.Take(9)
                     If Not season.Id = currentSeason.Id Then
                         Dim last As RegionRanking = season.Regions(validRegions(region.ToUpper)).OrderByDescending(Function(r) r.CreatedForDate).FirstOrDefault
-                        strBuilder.AppendLine($"{season.Name}: `{SiegeRanks.GetRankFromId(last.MaxRank).rankName}`")
+                        strBuilder.AppendLine($"{season.Name}: `{SiegeRanks.GetNameFromId(last.MaxRank)}`")
                     End If
                 Next
 
@@ -159,11 +159,8 @@ Namespace Commands.Modules
                 strBuilder.Clear()
 
 
-                Dim timeDifference As TimeSpan = Date.Now - ranking.CreatedForDate.ToLocalTime
-                Dim humanizedTime As String = If(timeDifference <= TimeSpan.FromSeconds(10), "A Moment Ago", $"{timeDifference.Humanize(maxUnit:=TimeUnit.Hour)} ago")
-
                 .Color = DiscordColor.SpringGreen
-                .ThumbnailUrl = SiegeRanks.GetRankFromId(ranking.Rank).url
+                .ThumbnailUrl = $"https://r6tab.com/images/pngranks/{ranking.Rank}.png"
 
                 .Author = New DiscordEmbedBuilder.EmbedAuthor With {
                     .Name = $"{player.Username} • Level {statData.Progression.Level} • {platform.ToUpper}",
@@ -172,7 +169,7 @@ Namespace Commands.Modules
                 }
 
                 .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                    .Text = $"Rainbow Six Siege  •  Updated {humanizedTime}",
+                    .Text = $"Rainbow Six Siege  •  Updated {(Date.Now - ranking.CreatedForDate.ToLocalTime).Humanize(maxUnit:=TimeUnit.Hour)} ago",
                     .IconUrl = "https://i.imgur.com/F8SVRpS.png"
                 }
             End With
