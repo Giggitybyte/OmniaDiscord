@@ -74,18 +74,18 @@ Namespace Services
             End If
         End Sub
 
-        Private Async Function VoiceDisconnectedHandlerAsync(e As VoiceStateUpdateEventArgs) As Task
-            If Not e.User.IsCurrent AndAlso e.After.Channel IsNot Nothing Then Return
-            Dim guildConnection = Await _nodeConnection?.ConnectAsync(e.Before.Channel)
-            If guildConnection Is Nothing Then Return
+        'Private Async Function VoiceDisconnectedHandlerAsync(e As VoiceStateUpdateEventArgs) As Task
+        '    If Not e.User.IsCurrent AndAlso e.After.Channel IsNot Nothing Then Return
+        '    Dim guildConnection = Await _nodeConnection?.ConnectAsync(e.Before.Channel)
+        '    If guildConnection Is Nothing Then Return
 
-            guildConnection.Stop()
-            guildConnection.SetVolume(100)
-            guildConnection.ResetEqualizer()
-            guildConnection.Disconnect()
+        '    guildConnection.Stop()
+        '    guildConnection.SetVolume(100)
+        '    guildConnection.ResetEqualizer()
+        '    guildConnection.Disconnect()
 
-            _GuildInfo(e.Guild.Id).ResetTrackData()
-        End Function
+        '    _GuildInfo(e.Guild.Id).ResetTrackData()
+        'End Function
 
         Public Async Function PlayNextTrackAsync(guild As DiscordGuild) As Task(Of Boolean)
             _GuildInfo(guild.Id).MediaQueue.TryDequeue(_GuildInfo(guild.Id).CurrentTrack)
