@@ -13,6 +13,7 @@ Namespace Services
             _db = db
 
             AddHandler client.GuildMemberAdded, AddressOf MemberJoinHandler
+            AddHandler client.GuildMemberRemoved, AddressOf MemberLeaveHandler
             AddHandler client.GuildMemberUpdated, AddressOf MemberUpdatedHandler
             AddHandler client.GuildRoleDeleted, AddressOf RoleDeletedHandler
             AddHandler client.ChannelCreated, AddressOf ChannelCreatedHandler
@@ -29,6 +30,12 @@ Namespace Services
             If role Is Nothing Then role = e.Guild.Roles(roleId)
 
             Await e.Member.GrantRoleAsync(role, "Re-muting previously muted user.")
+        End Function
+
+        ' Removes title from users that leave, are kicked, or are banned.
+        Private Function MemberLeaveHandler(e As GuildMemberRemoveEventArgs) As Task
+            If _db.GetGuildData(e.Guild.Id).StaffTitles.ContainsKey(e.Member.Id) Then _db.GetGuildData(e.Guild.Id).StaffTitles.Remove(e.Guild.Id)
+            Return Task.CompletedTask
         End Function
 
         ' Re-adds muted role to user if it is manually removed from them.

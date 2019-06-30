@@ -3,7 +3,7 @@
     Public Class GuildSettings
 
         Public Property Id As Integer ' Database ID.
-        Public Property GuildId As ULong ' The guild in which these settings belong to.
+        Public Property GuildId As ULong ' The guild these settings belong to.
 
         Public Property Prefix As String ' The prefix currently set for this guild.
         Public Property LogChannelId As ULong ' The text channel for log output for this guild.

@@ -4,7 +4,6 @@ Imports DSharpPlus.CommandsNext.Entities
 Imports DSharpPlus.Entities
 
 Namespace Commands
-
     Public Class HelpFormatter
         Inherits BaseHelpFormatter
 
@@ -26,7 +25,6 @@ Namespace Commands
                 _embed.AddField("Aliases", String.Join(", ", cmdGroup.Aliases.Select(Function(altName As String) $"`{altName}`")), True)
 
             ElseIf command.Aliases?.Any Then
-
                 If command.Parent IsNot Nothing Then
                     _embed.AddField("Aliases", String.Join(", ", command.Aliases.Select(Function(altName As String) $"`{command.Parent.QualifiedName} {altName}`")), True)
                 Else
@@ -38,7 +36,6 @@ Namespace Commands
             _embed.AddField("Description", $"{If(command.Description, "Description not set.")}")
 
             If command.Overloads?.Any Then
-
                 Dim overloadsWithArgs As New List(Of CommandOverload)
                 Dim overloadsWithNoArgs As New List(Of CommandOverload)
 
@@ -103,5 +100,4 @@ Namespace Commands
         End Function
 
     End Class
-
 End Namespace
