@@ -238,55 +238,48 @@ Namespace Services
         End Function
 
         Private Function YoutubeVideoToMediaInfo(ytVideo As Video) As OmniaMediaInfo
-            Dim mediaInfo As New OmniaMediaInfo
-
-            With mediaInfo
-                .Author = ytVideo.Author
-                .DirectUrl = ytVideo.GetUrl
-                .Duration = ytVideo.Duration
-                .Origin = "YouTube"
-                .ThumbnailUrl = ytVideo.Thumbnails.HighResUrl
-                .Title = ytVideo.Title
-                .Type = OmniaMediaType.Track
+            YoutubeVideoToMediaInfo = New OmniaMediaInfo With {
+                .Author = ytVideo.Author,
+                .DirectUrl = ytVideo.GetUrl,
+                .Duration = ytVideo.Duration,
+                .Origin = "YouTube",
+                .ThumbnailUrl = ytVideo.Thumbnails.HighResUrl,
+                .Title = ytVideo.Title,
+                .Type = OmniaMediaType.Track,
                 .Url = ytVideo.GetUrl
+            }
 
-            End With
-
-            Return mediaInfo
+            Return YoutubeVideoToMediaInfo
         End Function
 
         Private Function BandcampTrackToMediaInfo(bcTrack As BandcampMediaInfo.TrackInfo, bcAlbum As BandcampMediaInfo) As OmniaMediaInfo
-            Dim mediaInfo As New OmniaMediaInfo
-
-            With mediaInfo
-                .Author = bcAlbum.Artist
-                .DirectUrl = bcTrack.Mp3.DirectLink
-                .Duration = TimeSpan.FromSeconds(Math.Floor(bcTrack.Duration))
-                .Origin = "Bandcamp"
-                .ThumbnailUrl = $"https://f4.bcbits.com/img/a{bcAlbum.ArtId.ToString.PadLeft(10, "0"c)}_10.jpg"
-                .Title = bcTrack.Title
-                .Type = OmniaMediaType.Track
+            BandcampTrackToMediaInfo = New OmniaMediaInfo With {
+                .Author = bcAlbum.Artist,
+                .DirectUrl = bcTrack.Mp3.DirectLink,
+                .Duration = TimeSpan.FromSeconds(Math.Floor(bcTrack.Duration)),
+                .Origin = "Bandcamp",
+                .ThumbnailUrl = $"https://f4.bcbits.com/img/a{bcAlbum.ArtId.ToString.PadLeft(10, "0"c)}_10.jpg",
+                .Title = bcTrack.Title,
+                .Type = OmniaMediaType.Track,
                 .Url = bcAlbum.Url
-            End With
+            }
 
-            Return mediaInfo
+            Return BandcampTrackToMediaInfo
         End Function
 
         Private Function SoundcloudTrackToMediaInfo(scTrack As SoundcloudTrack) As OmniaMediaInfo
-            Dim mediaInfo As New OmniaMediaInfo
-
-            With mediaInfo
-                .Author = scTrack.Uploader.Username
-                .DirectUrl = scTrack.Url
-                .Duration = TimeSpan.FromMilliseconds(scTrack.Duration)
-                .Origin = "Soundcloud"
-                .ThumbnailUrl = If(scTrack.ArtworkUrl, $"{_omniaConfig.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png")
-                .Title = scTrack.Title
-                .Type = OmniaMediaType.Track
+            SoundcloudTrackToMediaInfo = New OmniaMediaInfo With {
+                .Author = scTrack.Uploader.Username,
+                .DirectUrl = scTrack.Url,
+                .Duration = TimeSpan.FromMilliseconds(scTrack.Duration),
+                .Origin = "Soundcloud",
+                .ThumbnailUrl = If(scTrack.ArtworkUrl, $"{_omniaConfig.ResourceUrl}/assets/omnia/{ .Origin}.png"),
+                .Title = scTrack.Title,
+                .Type = OmniaMediaType.Track,
                 .Url = scTrack.Url
-            End With
+            }
 
-            Return mediaInfo
+            Return SoundcloudTrackToMediaInfo
         End Function
 
         Private Async Function GetJsonFromWebPageSourceAsync(url As String, startString As String, endString As String) As Task(Of String)
