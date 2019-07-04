@@ -88,7 +88,7 @@ Namespace Commands.Modules
                     UpdateGuildSettings()
 
                     With embed
-                        .Color = DiscordColor.Green
+                        .Color = DiscordColor.SpringGreen
                         .Title = "Custom Prefix Set"
                         .Description = $"Server prefix was changed from `{If(oldPrefix, OmniaConfig.DefaultPrefix)}` to `{newPrefix}`"
                     End With
@@ -112,7 +112,7 @@ Namespace Commands.Modules
                 UpdateGuildSettings()
 
                 Dim embed As New DiscordEmbedBuilder With {
-                    .Color = DiscordColor.Green,
+                    .Color = DiscordColor.SpringGreen,
                     .Title = "Prefix Reset",
                     .Description = "Your server no longer has a custom prefix."
                 }
@@ -127,7 +127,7 @@ Namespace Commands.Modules
                 UpdateGuildSettings()
 
                 Dim embed As New DiscordEmbedBuilder With {
-                    .Color = DiscordColor.Green,
+                    .Color = DiscordColor.SpringGreen,
                     .Title = "Log Channel Reset",
                     .Description = "Your server no longer has a channel for logs."
                 }

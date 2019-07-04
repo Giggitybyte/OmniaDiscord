@@ -83,7 +83,7 @@ Namespace Commands.Modules
                     Directory.Delete(downloadPath, True)
 
                     With embed
-                        .Color = DiscordColor.Green
+                        .Color = DiscordColor.SpringGreen
                         .Title = "Retrieval Completed"
 
                         If failureCount > 0 Then

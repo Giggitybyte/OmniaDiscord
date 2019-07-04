@@ -18,9 +18,81 @@ Namespace Commands.Modules
             _adminService = adminService
         End Sub
 
+        <Command("warn"), RequireStaff>
+        <Description("Gives a user a warning. An acculative total of 3 warnings will have a user kicked.")>
+        <RequireBotPermissions(Permissions.KickMembers Or Permissions.BanMembers Or Permissions.EmbedLinks)>
+        <Cooldown(1, 5, CooldownBucketType.User)>
+        Public Async Function WarnCommand(ctx As CommandContext, user As DiscordMember) As Task
+            If user.Id = ctx.Member.Id Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.Red,
+                    .Description = $"You cannot issue warnings to yourself."
+                })
+                Return
+            End If
+
+            If Not GuildData.MemberWarnings.ContainsKey(user.Id) Then GuildData.MemberWarnings.Add(user.Id, 0)
+            GuildData.MemberWarnings(user.Id) += 1
+
+            Dim embed As New DiscordEmbedBuilder With {
+                .Color = DiscordColor.SpringGreen,
+                .Description = $"{user.Mention} now has {GuildData.MemberWarnings(user.Id)} warnings."
+            }
+
+            If GuildData.MemberWarnings(user.Id) >= 3 Then
+                embed.Description &= $"{Environment.NewLine}This user has been kicked."
+                Await user.RemoveAsync(reason:=$"Accumulated 3 warnings. Responsible user: {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
+                GuildData.MemberWarnings.Remove(user.Id)
+            End If
+
+            UpdateGuildData()
+            Await ctx.RespondAsync(embed:=embed.Build)
+        End Function
+
+        <Command("warnings")>
+        <Description("Displays the number of warnings a user has.")>
+        <RequireBotPermissions(Permissions.EmbedLinks)>
+        Public Async Function WarningsCommand(ctx As CommandContext, Optional user As DiscordMember = Nothing) As Task
+            If user Is Nothing Then user = ctx.Member
+            Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                .Color = DiscordColor.CornflowerBlue,
+                .Description = $"{user.Mention} has {If(GuildData.MemberWarnings.ContainsKey(user.Id), GuildData.MemberWarnings(user.Id), 0)} warnings."
+            })
+        End Function
+
+        <Command("forgive"), RequireStaff>
+        <Description("Removes a warning from a user.")>
+        <Cooldown(1, 5, CooldownBucketType.User)>
+        Public Async Function ForgiveCommand(ctx As CommandContext, user As DiscordMember) As Task
+            If user.Id = ctx.Member.Id Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.Red,
+                    .Description = $"You cannot forgive warnings issued to you."
+                })
+                Return
+            End If
+
+            If Not GuildData.MemberWarnings.ContainsKey(user.Id) OrElse GuildData.MemberWarnings(user.Id) = 0 Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.Red,
+                    .Description = $"{user.Mention} does not have any warnings to forgive."
+                })
+                Return
+            End If
+
+            GuildData.MemberWarnings(user.Id) -= 1
+            Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                .Color = DiscordColor.SpringGreen,
+                .Description = $"{user.Mention} now has {GuildData.MemberWarnings(user.Id)} warnings."
+            })
+
+            If GuildData.MemberWarnings(user.Id) = 0 Then GuildData.MemberWarnings.Remove(user.Id)
+            UpdateGuildData()
+        End Function
+
         <Command("mute")>
         <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
-        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.ManageChannels)>
+        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.ManageChannels Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             Dim role As DiscordRole
@@ -57,7 +129,7 @@ Namespace Commands.Modules
 
         <Command("unmute")>
         <Description("Allows a previously muted user to speak and send messages.")>
-        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles)>
+        <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function UnmuteCommand(ctx As CommandContext, user As DiscordMember) As Task
             If Not GuildData.MutedMembers.Contains(user.Id) Then
@@ -77,7 +149,7 @@ Namespace Commands.Modules
 
         <Command("kick")>
         <Description("Kicks a user from the server.")>
-        <RequireBotPermissions(Permissions.KickMembers)>
+        <RequireBotPermissions(Permissions.KickMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
@@ -91,7 +163,7 @@ Namespace Commands.Modules
 
         <Command("ban")>
         <Description("Bans a user from this server. Users who are not currently in this server can still be banned if their user ID is provided.")>
-        <RequireBotPermissions(Permissions.BanMembers)>
+        <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
@@ -106,7 +178,7 @@ Namespace Commands.Modules
 #Disable Warning BC42358
         <Command("softban"), Aliases("sban")>
         <Description("Bans then unbans a user after five minutes.")>
-        <RequireBotPermissions(Permissions.BanMembers)>
+        <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Then Return
@@ -125,7 +197,7 @@ Namespace Commands.Modules
 
         <Command("unban")>
         <Description("Removes a ban from a previously banned user.")>
-        <RequireBotPermissions(Permissions.BanMembers)>
+        <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function UnbanCommand(ctx As CommandContext, userId As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If userId.Id = ctx.Member.Id Then Return
