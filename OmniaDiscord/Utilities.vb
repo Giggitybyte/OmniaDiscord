@@ -3,11 +3,9 @@ Imports System.Net
 Imports System.Security.Cryptography
 Imports System.Text
 Imports System.Threading
-Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
-Imports Humanizer
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
