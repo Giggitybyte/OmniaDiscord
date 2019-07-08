@@ -82,7 +82,6 @@ Public Class Bot
 
         Dim commandConfig As CommandsNextConfiguration = New CommandsNextConfiguration With {
             .EnableDefaultHelp = True,
-            .IgnoreExtraArguments = True,
             .Services = _services,
             .PrefixResolver = AddressOf PrefixResolver
         }

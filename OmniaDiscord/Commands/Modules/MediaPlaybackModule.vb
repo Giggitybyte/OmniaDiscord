@@ -14,6 +14,8 @@ Imports YoutubeExplode
 Imports YoutubeExplode.Models
 Imports OmniaDiscord.Entities.Media
 Imports Humanizer
+Imports System.Net
+Imports Myrmec
 
 Namespace Commands.Modules
 
@@ -76,76 +78,42 @@ Namespace Commands.Modules
         End Function
 
         <Command("upload")>
-        <Description("Queue music, videos, and other audio for playback from a file attachment.")>
+        <Description("Queue music, videos, and other audio for playback from a file attachment. Supports mp3, mp4, m4a, flac, ogg, ogv, oga, wav, mkv, mka, and webm.")>
         <Cooldown(3, 15, CooldownBucketType.User)>
         Public Async Function UploadCommand(ctx As CommandContext) As Task
-            Dim embed As New DiscordEmbedBuilder
-            Dim validExtensions As String() = {
-                ".mp3",
-                ".wav",
-                ".flac",
-                ".ogg",
-                ".mp4",
-                ".webm"
-            }
-
-            If ctx.Message.Attachments.Count > 0 Then
-                Dim attachments As New List(Of OmniaMediaInfo)
-                Dim media As OmniaMediaInfo = Nothing
-
-                For Each attachment In ctx.Message.Attachments
-                    Dim fileName As String = ctx.Message.Attachments.First.FileName
-                    Dim extIndex As Integer = fileName.LastIndexOf("."c)
-
-                    If extIndex <> -1 AndAlso validExtensions.Contains(fileName.Substring(extIndex).ToLower) Then
-                        Dim info As New OmniaMediaInfo With {
-                            .Author = ctx.Member.Mention,
-                            .DirectUrl = attachment.Url,
-                            .Origin = "File Upload",
-                            .Requester = ctx.Member.Id,
-                            .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/omnia/MediaDefault.png",
-                            .Title = fileName,
-                            .Type = OmniaMediaType.Track,
-                            .Url = attachment.Url
-                        }
-
-                        attachments.Add(info)
-                    End If
-                Next
-
-                If attachments.Count = 1 Then
-                    media = attachments.First
-
-                ElseIf attachments.Count > 1 Then
-                    media = New OmniaMediaInfo With {
-                        .Author = attachments.First.Author,
-                        .Origin = "Discord",
-                        .Requester = attachments.First.Requester,
-                        .ThumbnailUrl = attachments.First.ThumbnailUrl,
-                        .Title = "File Uploads",
-                        .Tracks = attachments,
-                        .Type = OmniaMediaType.Playlist
-                    }
-
-                Else
-                    With embed
-                        .Color = DiscordColor.Red
-                        .Title = "Invalid File Extenstion"
-                        .Description = $"Valid extensions: {String.Join(", ", validExtensions)}"
-                    End With
-
-                End If
-
-                If media IsNot Nothing Then embed = Await QueueMediaAsync(ctx, media)
-
-            Else
-                With embed
-                    .Color = DiscordColor.Red
-                    .Description = $"Nothing to queue; there was nothing uploaded along with your command."
-                End With
+            If Not ctx.Message.Attachments.Any Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.Red,
+                    .Description = $"Nothing to queue; a file was not uploaded along with your command."
+                })
+                Return
             End If
 
-            Await ctx.RespondAsync(embed:=embed.Build)
+            Dim attachment = ctx.Message.Attachments.First
+            Dim fileBytes As Byte()
+
+            Using wClient As New WebClient
+                fileBytes = Await wClient.DownloadDataTaskAsync(attachment.Url)
+            End Using
+
+            If Not IsPlayableFileType(fileBytes.Take(24).ToArray) Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.Red,
+                    .Description = $"The file you've uploaded is not a supported file format."
+                })
+                Return
+            End If
+
+            Await ctx.RespondAsync(embed:=Await QueueMediaAsync(ctx, New OmniaMediaInfo With {
+                .Author = ctx.Member.Mention,
+                .DirectUrl = attachment.Url,
+                .Origin = "File Upload",
+                .Requester = ctx.Member.Id,
+                .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/omnia/MediaDefault.png",
+                .Title = attachment.FileName,
+                .Type = OmniaMediaType.Track,
+                .Url = attachment.Url
+            }))
         End Function
 
         <Command("search")>
@@ -720,6 +688,26 @@ Namespace Commands.Modules
 
             ct.Dispose()
             Await message.DeleteAllReactionsAsync
+        End Function
+
+        Private Function IsPlayableFileType(header As Byte()) As Boolean
+            Dim fileSniffer As New Sniffer
+            Dim allowedFiles As New List(Of Record) From {
+                New Record("mp3", "FF FB", "MPEG-1 Layer 3 - ID3v1"),
+                New Record("mp3", "49 44 33", "MPEG-1 Layer 3 - ID3v2"),
+                New Record("mp4", "00 00 00 18 66 74 79 70 6D 70 34 32", "MPEG-4"),
+                New Record("mp4", "00 00 00 20 66 74 79 70 69 73 6F 6D", "MPEG-4"),
+                New Record("m4a", "00 00 00 20 66 74 79 70 4D 34 41", "MPEG 4 Audio"),
+                New Record("flac", "66 4C 61 43", "Free Lossless Audio Codec"),
+                New Record("ogg ogv oga", "4F 67 67 53", "Ogg Container Format"),
+                New Record("wav", "52 49 46 46 ?? ?? ?? ?? 57 41 56 45", "Waveform Audio File Format "),
+                New Record("mkv mka webm", "1A 45 DF A3", "Matroska + WebM")
+            }
+
+            fileSniffer.Populate(allowedFiles)
+            Dim results = fileSniffer.Match(header, True)
+
+            Return results.Any
         End Function
 
         Private Async Sub AddPaginationEmojis(message As DiscordMessage, emojis As PaginationEmojis)

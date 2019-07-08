@@ -152,7 +152,14 @@ Namespace Commands.Modules
         <RequireBotPermissions(Permissions.KickMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
-            If user.Id = ctx.Member.Id Then Return
+            If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
+            If Not IsOmniaRolePositionHigher(ctx, user) Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                   .Color = DiscordColor.Red,
+                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot kick them."
+                })
+                Return
+            End If
 
             Dim logReason = $"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -166,7 +173,14 @@ Namespace Commands.Modules
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
-            If user.Id = ctx.Member.Id Then Return
+            If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
+            If Not IsOmniaRolePositionHigher(ctx, user) Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                   .Color = DiscordColor.Red,
+                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot ban them."
+                })
+                Return
+            End If
 
             Dim logReason = $"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -181,7 +195,14 @@ Namespace Commands.Modules
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
-            If user.Id = ctx.Member.Id Then Return
+            If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
+            If Not IsOmniaRolePositionHigher(ctx, user) Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                   .Color = DiscordColor.Red,
+                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot softban them."
+                })
+                Return
+            End If
 
             Dim logReason = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -212,6 +233,13 @@ Namespace Commands.Modules
 
             Await ctx.Guild.UnbanMemberAsync(userId.Id, logReason)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
+        End Function
+
+        Private Function IsOmniaRolePositionHigher(ctx As CommandContext, member As DiscordMember) As Boolean
+            If ctx.Guild.CurrentMember.Roles.Any(Function(r) r.CheckPermission(Permissions.Administrator)) Then Return True
+            Dim omniaHighest = ctx.Guild.CurrentMember.Roles.OrderByDescending(Function(r) r.Position).FirstOrDefault
+            Dim memberHighest = member.Roles.OrderByDescending(Function(r) r.Position).FirstOrDefault
+            Return omniaHighest?.Position > memberHighest?.Position
         End Function
 
         <Group("prune"), Aliases("purge", "remove")>
@@ -270,9 +298,7 @@ Namespace Commands.Modules
             <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them. `messageCount` defaults to 100.")>
             Public Async Function RemoveMessagesFromBotsCommand(ctx As CommandContext, Optional messageCount As ULong = 100) As Task
                 Dim twoWeeksAgo As Date = Date.Now.AddDays(-14)
-                Dim initalMessageCount As Integer
                 Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, 1000)).ToList
-                initalMessageCount = messages.Count
                 messages.RemoveAll(Function(m) Not m.Author.IsBot)
                 messages.RemoveAll(Function(m) m.CreationTimestamp < twoWeeksAgo)
 

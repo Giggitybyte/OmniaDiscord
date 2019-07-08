@@ -1,7 +1,4 @@
-﻿Imports Newtonsoft.Json
-Imports Newtonsoft.Json.Linq
-
-Namespace Entities.Gamestats
+﻿Namespace Entities.Gamestats
     Public Structure SiegeRanks
         Private Shared _ranks As New List(Of String) From {
             "Unranked",
