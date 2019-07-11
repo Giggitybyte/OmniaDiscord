@@ -75,15 +75,16 @@ Namespace Services
         End Sub
 
         Private Function VoiceDisconnectedHandlerAsync(e As VoiceStateUpdateEventArgs) As Task
-            If Not e.User.IsCurrent AndAlso e.After.Channel IsNot Nothing Then Return Task.CompletedTask
-            Dim guildConnection = _nodeConnection?.GetConnection(e.Guild)
-            If guildConnection Is Nothing Then Return Task.CompletedTask
+            If e.User.Id = e.Guild.CurrentMember.Id AndAlso e.Guild.CurrentMember.VoiceState?.Channel Is Nothing Then
+                Dim guildConnection = _nodeConnection?.GetConnection(e.Guild)
+                If guildConnection Is Nothing Then Return Task.CompletedTask
 
-            guildConnection.Stop()
-            guildConnection.SetVolume(100)
-            guildConnection.ResetEqualizer()
-            guildConnection.Disconnect()
-            _GuildInfo(e.Guild.Id).ResetTrackData()
+                guildConnection.Stop()
+                guildConnection.SetVolume(100)
+                guildConnection.ResetEqualizer()
+                guildConnection.Disconnect()
+                _GuildInfo(e.Guild.Id).ResetTrackData()
+            End If
 
             Return Task.CompletedTask
         End Function

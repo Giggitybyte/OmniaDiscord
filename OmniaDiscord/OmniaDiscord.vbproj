@@ -28,10 +28,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00614" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00614" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00614" />
-    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00614" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00616" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00616" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00616" />
+    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00616" />
     <PackageReference Include="FluentCommandLineParser.NETStandard" Version="1.5.0.31-commands" />
     <PackageReference Include="Humanizer.Core" Version="2.6.2" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
@@ -40,7 +40,7 @@
     <PackageReference Include="SkiaSharp" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
-    <PackageReference Include="YoutubeExplode" Version="4.7.5" />
+    <PackageReference Include="YoutubeExplode" Version="4.7.6" />
   </ItemGroup>
 
   <ItemGroup>
