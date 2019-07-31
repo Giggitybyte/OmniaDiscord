@@ -4,7 +4,7 @@ Imports Microsoft.Extensions.DependencyInjection
 Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
 
-Namespace Commands.Checks
+Namespace Entities.Attributes
 
     ''' <summary>
     ''' Defines the minimum title required to run this command.

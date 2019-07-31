@@ -23,7 +23,7 @@ Namespace Services
         Private Async Function MemberJoinHandler(e As GuildMemberAddEventArgs) As Task
             If Not _db.GetGuildData(e.Guild.Id).MutedMembers.Contains(e.Member.Id) Then Return
 
-            Dim roleId = _db.GetGuildSettings(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
             Dim role As DiscordRole
 
             If Not e.Guild.Roles.ContainsKey(roleId) Then role = Await CreateGuildMutedRoleAsync(e.Guild)
@@ -42,7 +42,7 @@ Namespace Services
         Private Async Function MemberUpdatedHandler(e As GuildMemberUpdateEventArgs) As Task
             If Not _db.GetGuildData(e.Guild.Id).MutedMembers.Contains(e.Member.Id) Then Return
 
-            Dim roleId = _db.GetGuildSettings(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
             If roleId = 0 Then Return
 
             If e.RolesBefore.Select(Function(r) r.Id).Contains(roleId) AndAlso Not e.RolesAfter.Select(Function(r) r.Id).Contains(roleId) Then
@@ -52,16 +52,16 @@ Namespace Services
 
         ' Re-creates muted role if it is deleted.
         Private Async Function RoleDeletedHandler(e As GuildRoleDeleteEventArgs) As Task
-            If e.Role.Id = _db.GetGuildSettings(e.Guild.Id).MutedRoleId Then
-                Dim settings = _db.GetGuildSettings(e.Guild.Id)
+            If e.Role.Id = _db.GetGuildData(e.Guild.Id).MutedRoleId Then
+                Dim settings = _db.GetGuildData(e.Guild.Id)
                 settings.MutedRoleId = (Await CreateGuildMutedRoleAsync(e.Guild)).Id
-                _db.UpdateGuildSettings(settings)
+                _db.UpdateGuildData(settings)
             End If
         End Function
 
         ' Adds muted role overwrite to new channels.
         Private Async Function ChannelCreatedHandler(e As ChannelCreateEventArgs) As Task
-            Dim roleId = _db.GetGuildSettings(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
             Dim role As DiscordRole
 
             If roleId = 0 Then Return
@@ -73,9 +73,9 @@ Namespace Services
             Dim role = Await guild.CreateRoleAsync("Muted", Permissions.None, DiscordColor.Black, False, False, "Muted role generation for Omnia.")
             Await role.ModifyPositionAsync(0, "Muted role generation for Omnia.")
 
-            Dim settings = _db.GetGuildSettings(guild.Id)
+            Dim settings = _db.GetGuildData(guild.Id)
             settings.MutedRoleId = role.Id
-            _db.UpdateGuildSettings(settings)
+            _db.UpdateGuildData(settings)
 
             For Each channel In guild.Channels.Values
                 Await channel.AddOverwriteAsync(role, Permissions.None, Permissions.SendMessages Or Permissions.Speak, "Muted role configuration for Omnia.")

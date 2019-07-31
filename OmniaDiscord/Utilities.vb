@@ -6,6 +6,7 @@ Imports System.Threading
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
+Imports DSharpPlus.Interactivity
 Imports SkiaSharp
 Imports SKSvg = SkiaSharp.Extended.Svg.SKSvg
 
@@ -114,7 +115,40 @@ Public Class Utilities
         Return rawjson
     End Function
 
-    Private Async Function DoEmbedPaginationAsync(ctx As CommandContext, embeds As Dictionary(Of DiscordEmoji, DiscordEmbed), Optional timeout As Integer = 30000) As Task
+    Public Shared Async Function GetUserConfirmationAsync(ctx As CommandContext) As Task(Of Boolean)
+        Dim interactivity As InteractivityExtension = ctx.Client.GetInteractivity
+        Dim conformationCode As String = GenerateRandomChars(8)
+        Dim embed As New DiscordEmbedBuilder
+
+        With embed
+            .Color = DiscordColor.Yellow
+            .Title = "Action Confirmation"
+            .Description = $"Please be sure you want to go through with this action.{Environment.NewLine}Respond with the following confirmation code to complete this action.{Environment.NewLine}```{conformationCode}```"
+        End With
+
+        Dim confirmationMessage As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)
+        Dim message As InteractivityResult(Of DiscordMessage) = Await interactivity.WaitForMessageAsync(Function(m)
+                                                                                                            If Not m.Author = ctx.Message.Author Then Return False
+                                                                                                            Return m.Content.Trim = conformationCode
+                                                                                                        End Function,
+                                                                                                        TimeSpan.FromSeconds(30))
+        Await confirmationMessage.DeleteAsync
+
+        If message.Result Is Nothing Then
+            With embed
+                .Color = DiscordColor.Orange
+                .Title = "Timed Out"
+                .Description = "The confirmation code was not entered in time."
+            End With
+
+            Await ctx.RespondAsync(embed:=embed.Build)
+            Return False
+        End If
+
+        Return True
+    End Function
+
+    Public Shared Async Function DoEmbedPaginationAsync(ctx As CommandContext, embeds As Dictionary(Of DiscordEmoji, DiscordEmbed), Optional timeout As Integer = 30000) As Task
         Dim tsc As New TaskCompletionSource(Of String)
         Dim ct As New CancellationTokenSource(timeout)
         ct.Token.Register(Sub() tsc.TrySetResult(Nothing))

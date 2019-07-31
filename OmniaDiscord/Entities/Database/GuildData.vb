@@ -1,9 +1,13 @@
 ﻿Namespace Entities.Database
 
+    ''' <summary>
+    ''' Variables that users don't directly modify.
+    ''' </summary>
     Public Class GuildData
 
         Public Property Id As Integer ' Database ID.
         Public Property GuildId As ULong ' The guild the data belongs to.
+        Public Property MutedRoleId As ULong ' The role to be used for muted users.
 
         Public Property MutedMembers As New List(Of ULong) ' Members who are not allowed to speak. 
         Public Property MemberWarnings As New Dictionary(Of ULong, Integer) ' Members with warnings.

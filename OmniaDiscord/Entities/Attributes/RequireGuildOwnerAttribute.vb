@@ -1,19 +1,15 @@
 ﻿Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
-Imports Microsoft.Extensions.DependencyInjection
-Imports OmniaDiscord.Entities.Database
-Imports OmniaDiscord.Services
 
-Namespace Commands.Checks
+Namespace Entities.Attributes
 
     <AttributeUsage(AttributeTargets.Class Or AttributeTargets.Method, AllowMultiple:=False, Inherited:=False)>
-    Public NotInheritable Class RequireStaffAttribute
+    Public Class RequireGuildOwnerAttribute
         Inherits CheckBaseAttribute
 
         Public Overrides Function ExecuteCheckAsync(ctx As CommandContext, help As Boolean) As Task(Of Boolean)
             If ctx.Guild.Owner.Id = ctx.Member.Id Then Return Task.FromResult(True)
-            Dim data As GuildData = ctx.Services.GetService(Of DatabaseService).GetGuildData(ctx.Guild.Id)
-            Return Task.FromResult(data.StaffTitles.ContainsKey(ctx.Member.Id))
+            Return Task.FromResult(False)
         End Function
 
     End Class

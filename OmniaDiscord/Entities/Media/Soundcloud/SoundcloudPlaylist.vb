@@ -23,7 +23,7 @@ Namespace Entities.Media.Soundcloud
         Public Property Type As String
 
         <JsonProperty("artwork_url")>
-        Public Property ArtworkUrl As Object
+        Public Property ArtworkUrl As String
 
         <JsonProperty("user")>
         Public Property Creator As SoundcloudUser

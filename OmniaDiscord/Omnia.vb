@@ -13,7 +13,7 @@ Imports Humanizer
 Imports Microsoft.Extensions.DependencyInjection
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Commands
-Imports OmniaDiscord.Commands.Checks
+Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
 
@@ -72,9 +72,10 @@ Public Class Bot
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
             .AddSingleton(Of AdministrationService)
+            ' .AddSingleton(Of AutoMoveService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
-            '.AddSingleton(Of LobbySystemService)
+            ' .AddSingleton(Of LobbySystemService)
             .AddSingleton(Of MediaRetrievalService)
 
             _services = .BuildServiceProvider
@@ -110,6 +111,13 @@ Public Class Bot
                                              Dim ex As Exception = arg.Exception.InnerException
                                              Return logger.PrintAsync(LogLevel.Error, arg.EventName, $"'{ex.Message}':{Environment.NewLine}{ex.StackTrace}")
                                          End Function
+
+        AddHandler client.Ready, Function(arg)
+                                     _services.GetRequiredService(Of LobbySystemService)
+                                     _services.GetRequiredService(Of LavalinkService)
+                                     _services.GetRequiredService(Of AdministrationService)
+                                     Return Task.CompletedTask
+                                 End Function
 
         Await client.StartAsync
         Await Task.Delay(-1)

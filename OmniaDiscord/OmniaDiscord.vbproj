@@ -1,6 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk"> 
 
   <PropertyGroup>
+	<VBRuntime>Default</VBRuntime>
     <OutputType>Exe</OutputType>
     <RootNamespace>OmniaDiscord</RootNamespace>
     <TargetFramework>netcoreapp2.2</TargetFramework>
@@ -28,11 +29,12 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00616" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00616" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00616" />
-    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00616" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00621" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00621" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00621" />
+    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00621" />
     <PackageReference Include="FluentCommandLineParser.NETStandard" Version="1.5.0.31-commands" />
+    <PackageReference Include="Google.Apis.YouTube.v3" Version="1.40.2.1593" />
     <PackageReference Include="Humanizer.Core" Version="2.6.2" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Myrmec" Version="1.2.0" />
@@ -40,7 +42,7 @@
     <PackageReference Include="SkiaSharp" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
-    <PackageReference Include="YoutubeExplode" Version="4.7.6" />
+    <PackageReference Include="YoutubeExplode" Version="4.7.7" />
   </ItemGroup>
 
   <ItemGroup>

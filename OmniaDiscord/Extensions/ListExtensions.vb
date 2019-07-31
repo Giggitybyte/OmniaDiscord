@@ -8,9 +8,9 @@ Public Module ListExtensions
     <Extension()>
     Function TakeAndRemove(Of T)(ByRef collection As IList(Of T), count As Integer) As IList(Of T)
         SyncLock collection
-            Dim value As IList(Of T) = collection.Take(count)
-            collection = collection.Skip(count)
-            Return value
+            Dim value As IList(Of T) = collection.Take(count).ToList
+            collection = collection.Skip(count).ToList
+            Return value.ToList
         End SyncLock
     End Function
 End Module

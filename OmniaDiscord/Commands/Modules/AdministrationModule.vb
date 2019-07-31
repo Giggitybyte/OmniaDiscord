@@ -4,7 +4,7 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.CommandsNext.Converters
 Imports DSharpPlus.Entities
-Imports OmniaDiscord.Commands.Checks
+Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
 
@@ -97,13 +97,13 @@ Namespace Commands.Modules
         Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             Dim role As DiscordRole
 
-            If GuildSettings.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(GuildSettings.MutedRoleId) Then
+            If GuildData.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(GuildData.MutedRoleId) Then
                 Dim message = Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Orange, .Description = "Configuring muted role..."})
                 role = Await _adminService.CreateGuildMutedRoleAsync(ctx.Guild)
                 Await message.DeleteAsync
             End If
 
-            If role Is Nothing Then role = ctx.Guild.Roles(GuildSettings.MutedRoleId)
+            If role Is Nothing Then role = ctx.Guild.Roles(GuildData.MutedRoleId)
 
             If user.Id = ctx.Member.Id Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "You cannot mute yourself."})
@@ -141,7 +141,7 @@ Namespace Commands.Modules
             UpdateGuildData()
 
             Dim logReason = $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})"
-            If ctx.Guild.Roles.ContainsKey(GuildSettings.MutedRoleId) Then Await user.RevokeRoleAsync(ctx.Guild.Roles(GuildSettings.MutedRoleId), logReason)
+            If ctx.Guild.Roles.ContainsKey(GuildData.MutedRoleId) Then Await user.RevokeRoleAsync(ctx.Guild.Roles(GuildData.MutedRoleId), logReason)
             If user.VoiceState?.IsServerMuted Then Await user.SetMuteAsync(False, logReason)
 
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
@@ -174,7 +174,8 @@ Namespace Commands.Modules
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
-            If Not IsOmniaRolePositionHigher(ctx, user) Then
+
+            If ctx.Guild.Members.ContainsKey(user.Id) AndAlso Not IsOmniaRolePositionHigher(ctx, ctx.Guild.Members(user.Id)) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                    .Color = DiscordColor.Red,
                    .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot ban them."
@@ -194,8 +195,9 @@ Namespace Commands.Modules
         <Description("Bans then unbans a user after five minutes.")>
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
-        Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
+        Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
+
             If Not IsOmniaRolePositionHigher(ctx, user) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                    .Color = DiscordColor.Red,
