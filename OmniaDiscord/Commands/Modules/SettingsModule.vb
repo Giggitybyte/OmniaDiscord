@@ -76,7 +76,8 @@ Namespace Commands.Modules
             Dim newValue As Object
             If Not settingInfo.ValidSetType.Equals(GetType(String)) Then
                 Try
-                    newValue = Activator.CreateInstance(settingInfo.ValidSetType).Parse(value)
+                    Dim typeObj = Activator.CreateInstance(settingInfo.ValidSetType)
+                    newValue = settingInfo.ValidSetType.InvokeMember("Parse", BindingFlags.InvokeMethod, Type.DefaultBinder, typeObj, {value}) ' Fuck Visual Basic
                 Catch ex As Exception
                     ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                         .Color = DiscordColor.Red,
