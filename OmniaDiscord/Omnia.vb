@@ -113,7 +113,7 @@ Public Class Bot
                                          End Function
 
         AddHandler client.Ready, Function(arg)
-                                     _services.GetRequiredService(Of LobbySystemService)
+                                     '_services.GetRequiredService(Of LobbySystemService)
                                      _services.GetRequiredService(Of LavalinkService)
                                      _services.GetRequiredService(Of AdministrationService)
                                      Return Task.CompletedTask
