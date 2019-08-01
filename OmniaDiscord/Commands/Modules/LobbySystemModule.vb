@@ -2,7 +2,6 @@
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
-Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 
 Namespace Commands.Modules
@@ -68,19 +67,5 @@ Namespace Commands.Modules
             UpdateGuildData()
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
-
-        <Command("toggle")>
-        <Description("Enables or disables the lobby system.")>
-        <RequireTitle(GuildTitle.Moderator)>
-        Public Async Function ToggleSystemCommand(ctx As CommandContext) As Task
-            GuildSettings.IsLobbySystemEnabled = Not GuildSettings.IsLobbySystemEnabled
-            UpdateGuildSettings()
-
-            Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
-                .Color = DiscordColor.SpringGreen,
-                .Description = $"Lobby system has been `{If(GuildSettings.IsLobbySystemEnabled, "enabled", "disabled")}`"
-            })
-        End Function
-
     End Class
 End Namespace
