@@ -16,7 +16,7 @@ Namespace Services
             _db = db
 
             AddHandler client.VoiceStateUpdated, AddressOf LobbySystemManager
-            AddHandler client.VoiceStateUpdated, AddressOf GameChannelManager
+            AddHandler client.VoiceStateUpdated, AddressOf GeneratedChannelManager
             AddHandler client.GuildMemberRemoved, AddressOf RemovedUserHandler
             AddHandler client.ChannelDeleted, AddressOf RemovedChannelHandler
         End Sub
@@ -62,72 +62,101 @@ Namespace Services
                     End If
                 Next
 
-                Dim generatedChn = Await e.Guild.CreateVoiceChannelAsync($"{New String(lobbyChannel.Name.Take(97).ToArray)} - {Utilities.GenerateRandomChars(4).ToUpper}",
+                Dim generatedChan = Await e.Guild.CreateVoiceChannelAsync($"{New String(lobbyChannel.Name.Take(97).ToArray)} - {Utilities.GenerateRandomChars(4).ToUpper}",
                                                                          If(lobbyChannel.Parent, Nothing),
                                                                          user_limit:=lobbyChannel.UserLimit,
                                                                          overwrites:=overwrites)
 
-                Await generatedChn.ModifyAsync(Sub(c) c.Position = lobbyChannel.Position)
-                _generatedChannels(generatedChn.Id) = lobbyChannel.Id
-                _allowedUsers(generatedChn.Id) = userIds
+                Await generatedChan.ModifyAsync(Sub(c) c.Position = lobbyChannel.Position)
+                _generatedChannels(generatedChan.Id) = lobbyChannel.Id
+                _allowedUsers(generatedChan.Id) = userIds
 
                 For Each user In users
-                    Await user.PlaceInAsync(generatedChn)
+                    Await user.PlaceInAsync(generatedChan)
                 Next
             End If
         End Function
 
 #Disable Warning BC42358
-        Private Async Function GameChannelManager(e As VoiceStateUpdateEventArgs) As Task
+        Private Async Function GeneratedChannelManager(e As VoiceStateUpdateEventArgs) As Task
             If Not _db.GetGuildSettings(e.Guild.Id).IsLobbySystemEnabled Then Return
 
             ' Keep generated channels full.
             If e.Before?.Channel IsNot Nothing AndAlso _generatedChannels.ContainsKey(e.Before.Channel.Id) Then
-                Dim generatedChn = e.Before.Channel
+                Dim generatedChan = e.Before.Channel
 
-                If generatedChn?.Users.Any Then
-                    If Not _allowedUsers(generatedChn.Id).Contains(e.User.Id) Then Return
+                If generatedChan?.Users.Any Then
+                    If Not _allowedUsers(generatedChan.Id).Contains(e.User.Id) Then Return
 
                     Dim cts As New CancellationTokenSource
-                    If Not _leaveTokens.ContainsKey(generatedChn.Id) Then _leaveTokens.TryAdd(generatedChn.Id, New Dictionary(Of ULong, CancellationTokenSource))
-                    _leaveTokens(generatedChn.Id).TryAdd(e.User.Id, cts)
+                    If Not _leaveTokens.ContainsKey(generatedChan.Id) Then _leaveTokens.TryAdd(generatedChan.Id, New Dictionary(Of ULong, CancellationTokenSource))
+                    _leaveTokens(generatedChan.Id).TryAdd(e.User.Id, cts)
 
                     Task.Delay(15000, cts.Token).ContinueWith(Async Sub()
+                                                                  ' Remove token.
+                                                                  _leaveTokens.TryRemove(generatedChan.Id, Nothing)
+
                                                                   ' Delete old user overwrite.
-                                                                  Dim perms = generatedChn.PermissionOverwrites
+                                                                  Dim perms = generatedChan.PermissionOverwrites
                                                                   Await perms.FirstOrDefault(Function(o)
                                                                                                  If o.Type = OverwriteType.Role Then Return False
                                                                                                  Return o.GetMemberAsync.GetAwaiter.GetResult.Id = e.User.Id
                                                                                              End Function)?.DeleteAsync
 
                                                                   ' Get lobby channel.
-                                                                  Dim lobbyChnId = _generatedChannels(generatedChn.Id)
-                                                                  If Not e.Guild.Channels.ContainsKey(lobbyChnId) Then Return
-                                                                  Dim lobbyChn As DiscordChannel = e.Guild.Channels(lobbyChnId)
+                                                                  Dim lobbyChanId = _generatedChannels(generatedChan.Id)
+                                                                  If Not e.Guild.Channels.ContainsKey(lobbyChanId) Then Return
+                                                                  Dim lobbyChan As DiscordChannel = e.Guild.Channels(lobbyChanId)
 
                                                                   ' Get new user.
-                                                                  If Not _queue.ContainsKey(lobbyChnId) OrElse Not _queue(lobbyChnId)?.Any Then Return
-                                                                  Dim nextId = _queue(lobbyChnId).TakeAndRemove(1).First
+                                                                  If Not _queue.ContainsKey(lobbyChanId) OrElse Not _queue(lobbyChanId)?.Any Then Return
+                                                                  Dim nextId = _queue(lobbyChanId).TakeAndRemove(1).First
                                                                   Dim nextUser = e.Guild.Members(nextId)
 
                                                                   ' Make overwrite for new user then move them.
-                                                                  If Not nextUser.VoiceState?.Channel.Id = lobbyChn?.Id Then Return
-                                                                  Await generatedChn.AddOverwriteAsync(nextUser, Permissions.UseVoice)
-                                                                  Await nextUser.PlaceInAsync(generatedChn)
+                                                                  If Not nextUser.VoiceState?.Channel.Id = lobbyChan?.Id Then Return
+                                                                  Await generatedChan.AddOverwriteAsync(nextUser, Permissions.UseVoice)
+                                                                  Await nextUser.PlaceInAsync(generatedChan)
                                                               End Sub, TaskContinuationOptions.NotOnCanceled)
 
                 Else
-                    Await generatedChn?.DeleteAsync()
+                    Await generatedChan?.DeleteAsync()
                 End If
             End If
 
-            ' Cancel tokens for returning users.
-            If e.After?.Channel IsNot Nothing AndAlso _generatedChannels.ContainsKey(e.After.Channel.Id) AndAlso _leaveTokens.ContainsKey(e.After.Channel.Id) Then
-                If Not _allowedUsers(e.After.Channel.Id).Contains(e.User.Id) Then Return
+            If e.After?.Channel IsNot Nothing Then
 
-                Dim token As CancellationTokenSource
-                _leaveTokens(e.After.Channel.Id).Remove(e.User.Id, token)
-                token.Cancel()
+                ' Cancel tokens for returning users.
+                If _generatedChannels.ContainsKey(e.After.Channel.Id) AndAlso _leaveTokens.ContainsKey(e.After.Channel.Id) Then
+                    If Not _allowedUsers(e.After.Channel.Id).Contains(e.User.Id) Then Return
+
+                    Dim token As CancellationTokenSource
+                    _leaveTokens(e.After.Channel.Id).Remove(e.User.Id, token)
+                    token.Cancel()
+                End If
+
+                ' Top off generated channels with users.
+                If _db.GetGuildData(e.Guild.Id).LobbyChannels.Contains(e.After.Channel.Id) Then
+                    Dim lobbyChan = e.After.Channel
+                    Dim user = e.Guild.Members(e.User.Id)
+                    Dim genChans As New List(Of DiscordChannel)
+
+                    For Each chanId In _generatedChannels.Where(Function(kvp) kvp.Value = e.After.Channel.Id).Select(Function(kvp) kvp.Key)
+                        If e.Guild.Channels.ContainsKey(chanId) Then genChans.Add(e.Guild.Channels(chanId))
+                    Next
+
+                    If Not genChans.Any Then Return
+                    Dim targetChan = genChans.FirstOrDefault(Function(c)
+                                                                 Dim tokenCount As Integer = 0
+                                                                 If _leaveTokens.ContainsKey(c.Id) Then tokenCount = _leaveTokens(c.Id).Count
+                                                                 Return (c.UserLimit - c.Users.Count) - tokenCount > 0
+                                                             End Function)
+                    If targetChan IsNot Nothing Then
+                        Await targetChan.AddOverwriteAsync(user, Permissions.UseVoice)
+                        targetChan.PlaceMemberAsync(user)
+                    End If
+                End If
+
             End If
         End Function
 #Enable Warning BC42358
