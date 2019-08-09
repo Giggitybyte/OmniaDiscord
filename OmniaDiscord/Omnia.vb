@@ -72,7 +72,6 @@ Public Class Bot
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
             .AddSingleton(Of AdministrationService)
-            ' .AddSingleton(Of AutoMoveService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
             .AddSingleton(Of LobbySystemService)
