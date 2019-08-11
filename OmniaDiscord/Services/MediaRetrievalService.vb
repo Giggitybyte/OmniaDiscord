@@ -13,25 +13,21 @@ Namespace Services
 
     Public Class MediaRetrievalService
         Private _webClient As WebClient
-        Private _logger As LogService
         Private _omniaConfig As Bot.Configuration
         Private _bandcampRegex As Regex
         Private _clypRegex As Regex
-        Private _discordRegex As Regex
         Private _instagramRegex As Regex
         Private _soundcloudRegex As Regex
         Private _spotifyRegex As Regex
         Private _vimeoRegex As Regex
         Private _youtubeRegex As Regex
 
-        Sub New(config As Bot.Configuration, logger As LogService)
-            _logger = logger
+        Sub New(config As Bot.Configuration)
             _omniaConfig = config
             _webClient = New WebClient
 
             _bandcampRegex = New Regex("https?:\/\/[a-z0-9\\-]+?\.bandcamp\.com\/album|track\/[a-z0-9\-]+?\/?", RegexOptions.Compiled)
             _clypRegex = New Regex("https?:\/\/clyp.it\/\w{8}", RegexOptions.Compiled)
-            _discordRegex = New Regex("https?:\/\/cdn\.discordapp\.com\/attachments\/\w{18}\/\w{18}\/", RegexOptions.Compiled)
             _instagramRegex = New Regex("(https?:\/\/(www\.)?)?instagram\.com(\/p\/\w+\/?)", RegexOptions.Compiled)
             _soundcloudRegex = New Regex("(https?:\/\/)?(www.)?(m\.)?soundcloud\.com\/[\w\-\.]+(\/)+[\w\-\.]+\/?", RegexOptions.Compiled)
             _spotifyRegex = New Regex("(https?:\/\/open.spotify.com\/(track|user|artist|album)\/[a-zA-Z0-9]+(\/playlist\/[a-zA-Z0-9]+|)|spotify:(track|user|artist|album):[a-zA-Z0-9]+(:playlist:[a-zA-Z0-9]+|))", RegexOptions.Compiled)
@@ -66,13 +62,9 @@ Namespace Services
 
             End If
 
-            If mediaInfo Is Nothing OrElse mediaInfo.Equals(New OmniaMediaInfo) Then
-                Return Nothing
-            Else
-                If String.IsNullOrEmpty(mediaInfo.ThumbnailUrl) Then mediaInfo.ThumbnailUrl = $"{_omniaConfig.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png"
-                Return mediaInfo
-            End If
-
+            If mediaInfo Is Nothing OrElse mediaInfo.Equals(New OmniaMediaInfo) Then Return Nothing
+            If String.IsNullOrEmpty(mediaInfo.ThumbnailUrl) Then mediaInfo.ThumbnailUrl = $"{_omniaConfig.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png"
+            Return mediaInfo
         End Function
 
         Private Async Function ResolveSoundcloudAsync(url As String) As Task(Of OmniaMediaInfo)

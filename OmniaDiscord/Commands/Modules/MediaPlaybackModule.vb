@@ -19,8 +19,8 @@ Imports Myrmec
 
 Namespace Commands.Modules
 
-    <Group("music"), RequireGuild, ModuleLifespan(ModuleLifespan.Transient)>
-    <Description("Command group for the playback of music and other audio.")>
+    <Group("music"), RequireGuild>
+    <Description("Allows for the playback of music and other audio.")>
     <RequireBotPermissions(Permissions.EmbedLinks Or Permissions.AddReactions Or Permissions.UseExternalEmojis Or Permissions.UseVoice Or Permissions.Speak)>
     Public Class MediaPlaybackModule
         Inherits OmniaCommandBase
@@ -291,14 +291,8 @@ Namespace Commands.Modules
         End Function
 
         <Command("skip")>
-        <Description("Skips the current track and begins playback for the next track in the queue.")>
-        Public Async Function SkipCommand(ctx As CommandContext) As Task
-            Await SkipToCommand(ctx, 1)
-        End Function
-
-        <Command("skipto")>
-        <Description("Begins playback for the specified track, skipping all other tracks before it.")>
-        Public Async Function SkipToCommand(ctx As CommandContext, trackNumber As Integer) As Task
+        <Description("Skips the current track and begins playback for the next track in the queue. If a track number is specified, all tracks before said track will be skipped, and playback will begin for the specified track.")>
+        Public Async Function SkipCommand(ctx As CommandContext, Optional trackNumber As Integer = 1) As Task
             Dim playbackInfo As GuildPlaybackInfo = _lavalink.GuildInfo(ctx.Guild.Id)
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
 
@@ -551,7 +545,52 @@ Namespace Commands.Modules
         End Function
 #End Region
 
+        <Group("playlist"), Aliases("pl")>
+        <Description("Allows for the management of user created playlists.")>
+        Public Class Playlist
+            Inherits OmniaCommandBase
+
+            <Command("create")>
+            <Description("Create a new playlist. If an image is attached with this command, it'll be used as the thumbnail for the newly created playlist.")>
+            Public Async Function CreatePlaylistCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+
+            <Command("delete")>
+            <Description("Delete a playlist.")>
+            Public Async Function DeletePlaylistCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+
+            <Command("add")>
+            <Description("Add tracks to a playlist.")>
+            Public Async Function AddTracksCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+
+            <Command("remove")>
+            <Description("Remove tracks from a playlist")>
+            Public Async Function RemoveTracksCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+
+            <Command("enqueue")>
+            <Description("Add all tracks from a playlist to the playback queue.")>
+            Public Async Function EnqueuePlaylistCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+
+            <Command("thumbnail")>
+            <Description("Add or modify the thumbnail for a playlist.")>
+            Public Async Function PlaylistThumbnailCommand(ctx As CommandContext) As Task
+                Throw New NotImplementedException
+            End Function
+        End Class
+
+        ' TODO: move all these methods to another class.
 #Region "Helper Methods"
+
+        ' TODO: clean this function up.
         Private Async Function QueueMediaAsync(ctx As CommandContext, media As OmniaMediaInfo) As Task(Of DiscordEmbedBuilder)
             Dim embed As New DiscordEmbedBuilder
 
@@ -604,6 +643,7 @@ Namespace Commands.Modules
 
                 If guildConnection IsNot Nothing AndAlso guildConnection.IsConnected Then
                     If _lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then
+                        ' TODO: Make this less fucky and log all tracks that fucked up.
                         Dim isSuccess As Boolean
 
                         Do
@@ -718,49 +758,6 @@ Namespace Commands.Modules
             Await message.CreateReactionAsync(emojis.SkipRight)
         End Sub
 #End Region
-
-        <Group("test"), RequireOwner, ModuleLifespan(ModuleLifespan.Transient)>
-        <Description("Command group containing subcommands to test specific parts of Lavalink playback.")>
-        Public Class DebugModule
-            Inherits BaseCommandModule
-
-            Private _lavalink As LavalinkService
-
-            Sub New(lavalink As LavalinkService)
-                _lavalink = lavalink
-            End Sub
-
-            <Command("equalizer"), Aliases("eq")>
-            Public Async Function EqTestCommand(ctx As CommandContext, band As Integer, gain As Single) As Task
-                Dim connection As LavalinkGuildConnection = _lavalink.Node.GetConnection(ctx.Guild)
-                connection.AdjustEqualizer(New LavalinkBandAdjustment(band, gain))
-
-                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
-            End Function
-
-            <Command("equalizer")>
-            Public Async Function EqTestCommand(ctx As CommandContext, gain As Single) As Task
-                Dim connection As LavalinkGuildConnection = _lavalink.Node.GetConnection(ctx.Guild)
-                Dim bands As New List(Of LavalinkBandAdjustment)
-
-                For band As Integer = 0 To 14
-                    bands.Add(New LavalinkBandAdjustment(band, gain))
-                Next
-
-                connection.AdjustEqualizer(bands.ToArray)
-
-                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
-            End Function
-
-            <Command("equalizer")>
-            Public Async Function EqTestCommand(ctx As CommandContext) As Task
-                Dim connection As LavalinkGuildConnection = _lavalink.Node.GetConnection(ctx.Guild)
-                connection.ResetEqualizer()
-
-                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":sweat_drops:"))
-            End Function
-
-        End Class
 
     End Class
 

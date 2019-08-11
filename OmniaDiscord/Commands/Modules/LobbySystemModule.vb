@@ -7,7 +7,7 @@ Imports OmniaDiscord.Entities.Database
 Namespace Commands.Modules
 
     <Group("lobby")>
-    <Description("Displays all lobby channels. Subcommands for this command allow for toggling of the lobby system as well as the addition and removal of lobby channels.")>
+    <Description("Displays all lobby channels. Subcommands for this command allow for the addition and removal of lobby channels.")>
     Public Class LobbySystemModule
         Inherits OmniaCommandBase
 
