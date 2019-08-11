@@ -3,6 +3,7 @@ Imports System.Threading
 Imports DSharpPlus
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
+Imports OmniaDiscord.Utilities
 
 Namespace Services
     Public Class LobbySystemService
@@ -62,7 +63,7 @@ Namespace Services
                     End If
                 Next
 
-                Dim generatedChan = Await e.Guild.CreateVoiceChannelAsync($"{New String(lobbyChannel.Name.Take(97).ToArray)} - {Utilities.GenerateRandomChars(4).ToUpper}",
+                Dim generatedChan = Await e.Guild.CreateVoiceChannelAsync($"{New String(lobbyChannel.Name.Take(97).ToArray)} - {GeneralUtilities.GenerateRandomChars(4).ToUpper}",
                                                                          If(lobbyChannel.Parent, Nothing),
                                                                          user_limit:=lobbyChannel.UserLimit,
                                                                          overwrites:=overwrites)

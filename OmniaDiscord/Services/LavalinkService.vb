@@ -43,35 +43,29 @@ Namespace Services
             _omniaConfig = config
             _logger = logger
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
-
-            For shard As Integer = 0 To shardedClient.ShardClients.Count - 1
-                Dim client As DiscordClient = shardedClient.ShardClients(shard)
-
-                For Each guild In client.Guilds.Keys
-                    AddGuildInfo(guild)
-                Next
-            Next
-
-            InitLavalinkNode(shardedClient.ShardClients(0))
         End Sub
 
-        Private Async Sub InitLavalinkNode(client As DiscordClient)
-            If _nodeConnection Is Nothing Then
-                Dim lavaConfig As New LavalinkConfiguration With {
-                    .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
-                    .RestEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
-                    .Password = _omniaConfig.LavalinkPasscode
-                }
+        Public Async Sub InitLavalinkNode(client As DiscordClient)
+            If _nodeConnection IsNot Nothing Then Return
 
-                Dim lavalink As LavalinkExtension = client.GetLavalink
-                _nodeConnection = Await lavalink.ConnectAsync(lavaConfig)
+            For Each guild In client.Guilds.Keys
+                AddGuildInfo(guild)
+            Next
 
-                AddHandler _nodeConnection.PlaybackFinished, AddressOf PlaybackFinishedHandler
-                AddHandler _nodeConnection.TrackException, AddressOf TrackExceptionHandler
-                AddHandler _nodeConnection.TrackStuck, AddressOf TrackStuckHandler
-                AddHandler _nodeConnection.Disconnected, AddressOf NodeDisconnectHandler
-                AddHandler _nodeConnection.LavalinkSocketErrored, AddressOf LavalinkSocketErroredHandler
-            End If
+            Dim lavaConfig As New LavalinkConfiguration With {
+                .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
+                .RestEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
+                .Password = _omniaConfig.LavalinkPasscode
+            }
+
+            Dim lavalink As LavalinkExtension = client.GetLavalink
+            _nodeConnection = Await lavalink.ConnectAsync(lavaConfig)
+
+            AddHandler _nodeConnection.PlaybackFinished, AddressOf PlaybackFinishedHandler
+            AddHandler _nodeConnection.TrackException, AddressOf TrackExceptionHandler
+            AddHandler _nodeConnection.TrackStuck, AddressOf TrackStuckHandler
+            AddHandler _nodeConnection.Disconnected, AddressOf NodeDisconnectHandler
+            AddHandler _nodeConnection.LavalinkSocketErrored, AddressOf LavalinkSocketErroredHandler
         End Sub
 
         Private Function VoiceDisconnectedHandlerAsync(e As VoiceStateUpdateEventArgs) As Task

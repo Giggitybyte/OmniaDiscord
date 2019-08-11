@@ -81,7 +81,6 @@ Public Class Bot
         End With
 
         Dim commandConfig As CommandsNextConfiguration = New CommandsNextConfiguration With {
-            .EnableDefaultHelp = True,
             .Services = _services,
             .PrefixResolver = AddressOf PrefixResolver
         }
@@ -112,9 +111,11 @@ Public Class Bot
                                          End Function
 
         AddHandler client.Ready, Function(arg)
+                                     Dim lavalink = _services.GetRequiredService(Of LavalinkService)
                                      _services.GetRequiredService(Of LobbySystemService)
-                                     _services.GetRequiredService(Of LavalinkService)
                                      _services.GetRequiredService(Of AdministrationService)
+
+                                     lavalink.InitLavalinkNode(client.ShardClients(0))
                                      Return Task.CompletedTask
                                  End Function
 

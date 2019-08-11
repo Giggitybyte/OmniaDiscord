@@ -5,6 +5,7 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Utilities
 
 Namespace Commands.Modules
 
@@ -66,7 +67,7 @@ Namespace Commands.Modules
 
                             Try
                                 Dim extenstion As String = attachment.FileName.Substring(attachment.FileName.LastIndexOf("."c)).ToLower
-                                Await webClient.DownloadFileTaskAsync(attachment.Url, $"{downloadPath}/{Utilities.GenerateRandomChars(16)}{extenstion}")
+                                Await webClient.DownloadFileTaskAsync(attachment.Url, $"{downloadPath}/{GeneralUtilities.GenerateRandomChars(16)}{extenstion}")
                             Catch ex As WebException
                                 failureCount += 1
                             End Try

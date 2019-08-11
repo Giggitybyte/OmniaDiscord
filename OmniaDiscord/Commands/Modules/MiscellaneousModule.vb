@@ -2,6 +2,7 @@
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Utilities
 
 Namespace Commands.Modules
     Public Class MiscellaneousModule
@@ -15,8 +16,8 @@ Namespace Commands.Modules
 
             If emoji.Id = 0 Then ' Unicode emoji.
                 Dim emojiUtf32Hex As String = Char.ConvertToUtf32(emoji.Name, 0).ToString("X4")
-                Dim fileName As String = Utilities.GenerateRandomChars(16)
-                Dim image As Stream = Await Utilities.SvgToStreamAsync($"https://twemoji.maxcdn.com/2/svg/{emojiUtf32Hex.ToLower}.svg")
+                Dim fileName As String = GeneralUtilities.GenerateRandomChars(16)
+                Dim image As Stream = Await GeneralUtilities.SvgToStreamAsync($"https://twemoji.maxcdn.com/2/svg/{emojiUtf32Hex.ToLower}.svg")
 
                 embed.ImageUrl = $"attachment://{fileName}.png"
                 Await ctx.RespondWithFileAsync($"{fileName}.png", image, embed:=embed.Build)

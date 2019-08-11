@@ -7,6 +7,7 @@ Imports Humanizer
 Imports Humanizer.Localisation
 Imports Newtonsoft.Json
 Imports OmniaDiscord.Entities.Gamestats
+Imports OmniaDiscord.Utilities
 Imports Overstarch
 Imports Overstarch.Entities
 Imports Overstarch.Enums
@@ -59,7 +60,7 @@ Namespace Commands.Modules
                 .MissingMemberHandling = MissingMemberHandling.Ignore
             }
 
-            Dim searchJson As String = Utilities.GetJson($"{baseUrl}/player-search/{Uri.EscapeUriString(username)}/{platform}")
+            Dim searchJson As String = GeneralUtilities.GetJson($"{baseUrl}/player-search/{Uri.EscapeUriString(username)}/{platform}")
             Dim player As SiegeSearchResult
 
             If Not String.IsNullOrEmpty(searchJson) Then
@@ -78,13 +79,13 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Dim statJson As String = Utilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}")
+            Dim statJson As String = GeneralUtilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}")
             Dim statData As SiegeStatData
             Dim seasonData As SiegeSeasonData
 
             If Not statJson Is Nothing Then
                 statData = JsonConvert.DeserializeObject(Of SiegeStatData)(statJson, jsonSettings)
-                seasonData = JsonConvert.DeserializeObject(Of SiegeSeasonData)(Utilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}/seasonal"), jsonSettings)
+                seasonData = JsonConvert.DeserializeObject(Of SiegeSeasonData)(GeneralUtilities.GetJson($"{baseUrl}/stats/{player.UbisoftId}/seasonal"), jsonSettings)
             End If
 
             If statData Is Nothing Or seasonData Is Nothing Then
