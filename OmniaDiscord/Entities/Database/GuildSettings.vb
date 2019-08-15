@@ -2,9 +2,6 @@
 
 Namespace Entities.Database
 
-    ''' <summary>
-    ''' Variables that users can modify.
-    ''' </summary>
     Public Class GuildSettings
 
         Public Property Id As Integer ' Database ID.

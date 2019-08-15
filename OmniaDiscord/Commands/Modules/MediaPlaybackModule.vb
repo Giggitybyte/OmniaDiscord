@@ -522,30 +522,163 @@ Namespace Commands.Modules
 
         <Group("playlist"), Aliases("pl")>
         <Description("Allows for the management of user created playlists.")>
-        Public Class Playlist
+        Public Class PlaylistSubmodule
             Inherits OmniaCommandBase
 
-            <Command("create")>
-            <Description("Create a new playlist. If an image is attached with this command, it'll be used as the thumbnail for the newly created playlist.")>
-            Public Async Function CreatePlaylistCommand(ctx As CommandContext) As Task
-                Throw New NotImplementedException
+            Private _mediaRetrieval As MediaRetrievalService
+            Private _lavalink As LavalinkService
+
+            Sub New(mediaRetrieval As MediaRetrievalService, lavalink As LavalinkService)
+                _mediaRetrieval = mediaRetrieval
+                _lavalink = lavalink
+            End Sub
+
+            <Command("create"), Priority(1)>
+            <Description("Create a new playlist.")>
+            Public Async Function CreatePlaylistCommand(ctx As CommandContext, playlistName As String, thumbnailUrl As String, <RemainingText> urls As String()) As Task
+                If GuildData.UserPlaylists.Any(Function(p) p.Name.ToLower = playlistName.ToLower) Then
+                    Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                        .Color = DiscordColor.Red,
+                        .Description = $"A playlist with that name already exists."
+                    })
+                    Return
+                End If
+
+                Dim playlist As New DiscordUserPlaylist With {
+                    .CreatorUserId = ctx.Member.Id,
+                    .Name = playlistName,
+                    .ThumbnailUrl = thumbnailUrl
+                }
+
+                GuildData.UserPlaylists.Add(playlist)
+                UpdateGuildData()
+
+                Dim emoji = DiscordEmoji.FromName(ctx.Client, ":ballot_box_with_check:")
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.SpringGreen,
+                    .Description = $"{emoji} Playlist created."
+                })
+
+                Await AddTracksCommand(ctx, playlistName, urls)
+            End Function
+
+            <Command("create"), Priority(0)>
+            Public Async Function CreatePlaylistCommand(ctx As CommandContext, playlistName As String, <RemainingText> urls As String()) As Task
+                Await CreatePlaylistCommand(ctx, playlistName, String.Empty, urls)
             End Function
 
             <Command("delete")>
             <Description("Delete a playlist.")>
-            Public Async Function DeletePlaylistCommand(ctx As CommandContext) As Task
-                Throw New NotImplementedException
+            Public Async Function DeletePlaylistCommand(ctx As CommandContext, playlistName As String) As Task
+                Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
+                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+
+                If playlist Is Nothing Then
+                    embed.Description = "Cannot delete playlist; no playlists exist with that name."
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                    Return
+                End If
+
+                If Not ctx.Member.Id = ctx.Guild.Owner.Id And Not ctx.Member.Id = playlist.CreatorUserId Then
+                    embed.Description = $"You cannot delete this playlist.{Environment.NewLine}A playlist can only be deleted by either it's creator or the owner of this server."
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                    Return
+                End If
+
+                GuildData.UserPlaylists.Remove(playlist)
+                UpdateGuildData()
+
+                Dim emoji = DiscordEmoji.FromName(ctx.Client, ":ballot_box_with_check:")
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                    .Color = DiscordColor.SpringGreen,
+                    .Description = $"{emoji} Playlist deleted."
+                })
             End Function
 
             <Command("add")>
             <Description("Add tracks to a playlist.")>
-            Public Async Function AddTracksCommand(ctx As CommandContext) As Task
-                Throw New NotImplementedException
+            Public Async Function AddTracksCommand(ctx As CommandContext, playlistName As String, <RemainingText> trackUrls As String()) As Task
+                Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
+                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+
+                If playlist Is Nothing Then
+                    embed.Description = "Cannot modify playlist; no playlists exist with that name."
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                    Return
+                End If
+
+                If Not ctx.Member.Id = playlist.CreatorUserId Then
+                    embed.Description = $"You cannot add tracks to this playlist.{Environment.NewLine}A playlist can only be altered by it's creator."
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                    Return
+                End If
+
+                GuildData.UserPlaylists.Remove(playlist)
+
+                With embed
+                    .Color = DiscordColor.Orange
+                    .Title = "Please Wait..."
+                    .Description = "Retrieving information for the provided URL(s)."
+                End With
+
+                Dim waitMessage = Await ctx.RespondAsync(embed:=embed.Build)
+                Dim goodUrls As New List(Of String)
+                Dim badUrls As New List(Of String)
+
+                For Each url In trackUrls
+                    Dim media = Await _mediaRetrieval.GetMediaAsync(url)
+
+                    If media Is Nothing Then
+                        badUrls.Add(url)
+                        Continue For
+                    End If
+
+                    Select Case media.Type
+                        Case OmniaMediaType.Track
+                            goodUrls.Add(media.Url)
+
+                        Case Else
+                            Dim tracks = media.Tracks.Select(Function(t) t.Url)
+                            goodUrls.AddRange(tracks)
+
+                    End Select
+                Next
+
+                If Not goodUrls.Any Then
+                    With embed
+                        .Color = DiscordColor.Red
+                        .Title = "Invalid URL(s)"
+                        .Description = "URL(s) provided were invalid."
+                    End With
+
+                    Await ctx.RespondAsync(embed:=embed.Build)
+                    Return
+                End If
+
+                If badUrls.Any Then
+                    With embed
+                        .Title = "Tracks Added"
+                        .Description = $"Out of {trackUrls.Count}, only {goodUrls.Count} were valid.{Environment.NewLine}"
+                        .Description &= $"Invalid URLs: {Formatter.BlockCode(String.Join(", ", badUrls.Select(Function(u) $"`{u}`")))}"
+                    End With
+                Else
+                    With embed
+                        .Color = DiscordColor.SpringGreen
+                        .Title = "Tracks Added"
+                        .Description = $"{goodUrls.Count.ToMetric} tracks were added to `{playlist.Name}`."
+                    End With
+                End If
+
+                playlist.TrackUrls.AddRange(goodUrls)
+                GuildData.UserPlaylists.Add(playlist)
+                UpdateGuildData()
+
+                Await ctx.RespondAsync(embed:=embed.Build)
             End Function
 
             <Command("remove")>
-            <Description("Remove tracks from a playlist")>
-            Public Async Function RemoveTracksCommand(ctx As CommandContext) As Task
+            <Description("Remove tracks from a playlist.")>
+            Public Async Function RemoveTracksCommand(ctx As CommandContext, playlistName As String, <RemainingText> trackNumbers As Integer()) As Task
                 Throw New NotImplementedException
             End Function
 
@@ -556,8 +689,8 @@ Namespace Commands.Modules
             End Function
 
             <Command("thumbnail")>
-            <Description("Add or modify the thumbnail for a playlist.")>
-            Public Async Function PlaylistThumbnailCommand(ctx As CommandContext) As Task
+            <Description("Add or change the thumbnail for a playlist.")>
+            Public Async Function PlaylistThumbnailCommand(ctx As CommandContext, playlistName As String, thumbnailUrl As String) As Task
                 Throw New NotImplementedException
             End Function
         End Class
