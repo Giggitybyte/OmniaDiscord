@@ -7,7 +7,6 @@ Namespace Commands
     Public MustInherit Class OmniaCommandBase
         Inherits BaseCommandModule
 
-        Public ReadOnly Property OmniaConfig As Bot.Configuration
         Public Property GuildData As GuildData
         Public Property GuildSettings As GuildSettings
         Private _db As DatabaseService
@@ -17,7 +16,6 @@ Namespace Commands
 
             _GuildData = _db.GetGuildData(ctx.Guild.Id)
             _GuildSettings = _db.GetGuildSettings(ctx.Guild.Id)
-            _OmniaConfig = ctx.Client.GetCommandsNext.Services.GetRequiredService(Of Bot.Configuration)
 
             Return MyBase.BeforeExecutionAsync(ctx)
         End Function

@@ -27,6 +27,7 @@ End Module
 Public Class Bot
     Private _services As IServiceProvider
     Private _runMode As OmniaRunMode
+    Public Shared Property Config As Configuration
 
     Sub New(args As String())
         Dim argParser As New FluentCommandLineParser
@@ -36,7 +37,7 @@ Public Class Bot
     End Sub
 
     Public Async Function RunAsync() As Task
-        Dim config As New Configuration
+        Config = New Configuration
         Dim token As String = String.Empty
         Dim logLevel As LogLevel = LogLevel.Debug
 
@@ -68,14 +69,12 @@ Public Class Bot
         Await discordClient.UseInteractivityAsync(New InteractivityConfiguration)
 
         With New ServiceCollection
-            .AddSingleton(config)
             .AddSingleton(discordClient)
             .AddSingleton(Of LogService)
             .AddSingleton(Of AdministrationService)
             .AddSingleton(Of DatabaseService)
             .AddSingleton(Of LavalinkService)
             .AddSingleton(Of LobbySystemService)
-            .AddSingleton(Of MediaRetrievalService)
 
             _services = .BuildServiceProvider
         End With
@@ -124,8 +123,7 @@ Public Class Bot
     End Function
 
     Private Async Function PrefixResolver(msg As DiscordMessage) As Task(Of Integer)
-        Dim config As Configuration = _services.GetRequiredService(Of Configuration)
-        If msg.GetStringPrefixLength(config.DefaultPrefix) <> -1 Then Return Await Task.FromResult(msg.GetStringPrefixLength(config.DefaultPrefix))
+        If msg.GetStringPrefixLength(Config.DefaultPrefix) <> -1 Then Return Await Task.FromResult(msg.GetStringPrefixLength(Config.DefaultPrefix))
 
         Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
         Dim settings As GuildSettings = db.GetGuildSettings(msg.Channel.GuildId)
@@ -137,7 +135,6 @@ Public Class Bot
             Dim botUser As DiscordUser = _services.GetRequiredService(Of DiscordShardedClient).CurrentUser
             Return Await Task.FromResult(msg.GetMentionPrefixLength(botUser))
         End If
-
 
         Return Await Task.FromResult(-1)
     End Function
@@ -200,7 +197,6 @@ Public Class Bot
                 ElseIf TryCast(failedCheck, RequireTitleAttribute) IsNot Nothing Then
                     Dim check As RequireTitleAttribute = CType(failedCheck, RequireTitleAttribute)
                     builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
-
                 End If
             Next
 
@@ -212,20 +208,18 @@ Public Class Bot
             ' TODO: upload exception message somewhere if over 1920 characters.
             builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
             builder.AppendLine($"```{arg.Exception}```")
-
         End If
 
         If builder.Length = 0 Then Return
 
         If channelPerms.HasPermission(Permissions.EmbedLinks) Then
             Dim embed As New DiscordEmbedBuilder With {
-                        .Color = DiscordColor.Red,
-                        .Title = "Unable To Execute Command",
-                        .Description = builder.ToString
-                    }
+                .Color = DiscordColor.Red,
+                .Title = "Unable To Execute Command",
+                .Description = builder.ToString
+            }
 
             Await arg.Context.RespondAsync(embed:=embed.Build)
-
         Else
             Await arg.Context.RespondAsync(builder.ToString)
         End If

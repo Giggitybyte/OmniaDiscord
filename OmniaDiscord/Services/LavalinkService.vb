@@ -12,7 +12,6 @@ Namespace Services
     Public Class LavalinkService
         Private _nodeConnection As LavalinkNodeConnection
         Private _logger As LogService
-        Private _omniaConfig As Bot.Configuration
 
         Public ReadOnly Property GuildInfo As ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
 
@@ -22,7 +21,7 @@ Namespace Services
             End Get
         End Property
 
-        Sub New(shardedClient As DiscordShardedClient, config As Bot.Configuration, logger As LogService)
+        Sub New(shardedClient As DiscordShardedClient, logger As LogService)
             AddHandler shardedClient.GuildCreated, Function(args)
                                                        AddGuildInfo(args.Guild.Id)
                                                        Return Task.CompletedTask
@@ -40,7 +39,6 @@ Namespace Services
 
             AddHandler shardedClient.VoiceStateUpdated, AddressOf VoiceDisconnectedHandlerAsync
 
-            _omniaConfig = config
             _logger = logger
             _GuildInfo = New ConcurrentDictionary(Of ULong, GuildPlaybackInfo)
         End Sub
@@ -53,9 +51,9 @@ Namespace Services
             Next
 
             Dim lavaConfig As New LavalinkConfiguration With {
-                .SocketEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
-                .RestEndpoint = New ConnectionEndpoint With {.Hostname = _omniaConfig.LavalinkIpAddress, .Port = 2333},
-                .Password = _omniaConfig.LavalinkPasscode
+                .SocketEndpoint = New ConnectionEndpoint With {.Hostname = Bot.Config.LavalinkIpAddress, .Port = 2333},
+                .RestEndpoint = New ConnectionEndpoint With {.Hostname = Bot.Config.LavalinkIpAddress, .Port = 2333},
+                .Password = Bot.Config.LavalinkPasscode
             }
 
             Dim lavalink As LavalinkExtension = client.GetLavalink

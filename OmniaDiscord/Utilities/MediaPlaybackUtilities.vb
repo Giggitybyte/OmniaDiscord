@@ -6,15 +6,15 @@ Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports Humanizer
+Imports Humanizer.Localisation
 Imports Myrmec
 Imports OmniaDiscord.Entities.Media
 Imports OmniaDiscord.Services
 
 Namespace Utilities
-    Public Class MediaUtilities
-
+    Public Class MediaPlaybackUtilities
         ' TODO: clean this function up.
-        Public Shared Async Function QueueMediaAsync(ctx As CommandContext, lavalink As LavalinkService, media As OmniaMediaInfo) As Task(Of DiscordEmbedBuilder)
+        Public Shared Async Function AddMediaToQueueAsync(ctx As CommandContext, lavalink As LavalinkService, media As OmniaMediaInfo) As Task(Of DiscordEmbedBuilder)
             Dim embed As New DiscordEmbedBuilder
 
             If media Is Nothing Then
@@ -57,7 +57,7 @@ Namespace Utilities
 
                         .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}"
                         .Description &= $"{media.Author}{Environment.NewLine}{Environment.NewLine}"
-                        .Description &= $"Total Playtime: {media.Duration.Humanize(2)}"
+                        .Description &= $"Total Playtime: {media.Duration.Humanize(2, maxUnit:=TimeUnit.Hour)}"
 
                         .ThumbnailUrl = media.ThumbnailUrl
                         .Footer.Text &= $" {media.Type}"
@@ -79,7 +79,7 @@ Namespace Utilities
             Return embed
         End Function
 
-        Public Shared Async Function DoQueuePaginationAsync(ctx As CommandContext, pages As List(Of String), timeout As Integer) As Task
+        Public Shared Async Function DoStringPaginationAsync(ctx As CommandContext, pages As List(Of String), timeout As Integer) As Task
             Dim tsc As New TaskCompletionSource(Of String)
             Dim ct As New CancellationTokenSource(timeout)
             ct.Token.Register(Sub() tsc.TrySetResult(Nothing))
@@ -146,7 +146,6 @@ Namespace Utilities
                 RemoveHandler ctx.Client.MessageReactionAdded, handler
                 RemoveHandler ctx.Client.MessageReactionRemoved, handler
                 RemoveHandler ctx.Client.MessageReactionsCleared, handler
-
             End Try
 
             ct.Dispose()
@@ -180,6 +179,5 @@ Namespace Utilities
             Await message.CreateReactionAsync(emojis.Right)
             Await message.CreateReactionAsync(emojis.SkipRight)
         End Sub
-
     End Class
 End Namespace

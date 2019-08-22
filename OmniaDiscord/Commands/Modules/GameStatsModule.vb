@@ -184,8 +184,8 @@ Namespace Commands.Modules
         Public Async Function OverwatchStats(ctx As CommandContext, platform As String, <RemainingText> username As String) As Task
             Dim embed As New DiscordEmbedBuilder
             Dim owClient As New OverwatchClient
-            Dim owPlayer As OverwatchPlayer = Nothing
-            Dim owPlatform As OverwatchPlatform = Nothing
+            Dim owPlayer As OverwatchPlayer
+            Dim owPlatform As OverwatchPlatform
 
             Await ctx.TriggerTypingAsync
 
@@ -227,10 +227,11 @@ Namespace Commands.Modules
                     With embed
                         Dim strBuilder As New StringBuilder
 
-                        If owPlayer.CompetitiveSkillRating = 0 Then
-                            .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/overwatch/logo.png"
+                        If Not owPlayer.SkillRatings.Any Then
+                            .ThumbnailUrl = $"{Bot.Config.ResourceUrl}/assets/overwatch/logo.png"
                         Else
-                            .ThumbnailUrl = $"{OmniaConfig.ResourceUrl}/assets/overwatch/skillrating/{owPlayer.CompetitiveSkillRating}.png"
+                            Dim sr = owPlayer.SkillRatings.GetHighestRole.Value
+                            .ThumbnailUrl = $"{Bot.Config.ResourceUrl}/assets/overwatch/skillrating/{sr}.png"
                         End If
 
                         .Author = New DiscordEmbedBuilder.EmbedAuthor With {
@@ -241,7 +242,7 @@ Namespace Commands.Modules
 
                         .Footer = New DiscordEmbedBuilder.EmbedFooter With {
                             .Text = "Overwatch",
-                            .IconUrl = $"{OmniaConfig.ResourceUrl}/assets/overwatch/logo.png"
+                            .IconUrl = $"{Bot.Config.ResourceUrl}/assets/overwatch/logo.png"
                         }
 
                         .Color = DiscordColor.SpringGreen

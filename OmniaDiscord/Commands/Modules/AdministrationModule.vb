@@ -261,19 +261,16 @@ Namespace Commands.Modules
             End Function
 
             <Command("usermessages"), Aliases("user", "u")>
-            <Description("Gets all messages from the specified user in the last 1,000 messages and bulk deletes them. `messageCount` defaults to 100.")>
+            <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them. `messageCount` defaults to 100.")>
             Public Async Function RemoveMessagesFromSpecificUserCommand(ctx As CommandContext, targetUser As String, Optional messageCount As ULong = 100) As Task
                 Await ctx.TriggerTypingAsync
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim convert = Await New DiscordUserConverter().ConvertAsync(targetUser, ctx)
+                Dim convert = Await TryCast(New DiscordUserConverter(), IArgumentConverter(Of DiscordUser)).ConvertAsync(targetUser, ctx)
                 Dim user = If(convert.HasValue, convert.Value, Nothing)
 
                 If user Is Nothing Then
-                    With embed
-                        .Title = "Invalid User"
-                        .Description = "The user you specified was either invalid or does not exist."
-                    End With
-
+                    embed.Title = "Invalid User"
+                    embed.Description = "The user you specified was either invalid or does not exist."
                     Await ctx.RespondAsync(embed:=embed.Build)
                     Return
                 End If
@@ -283,11 +280,8 @@ Namespace Commands.Modules
                 messages.RemoveAll(Function(m) Not m.Author.Id = user.Id And m.CreationTimestamp > twoWeeksAgo)
 
                 If messages.Count = 0 Then
-                    With embed
-                        .Title = "Couldn't Delete Messages"
-                        .Description = $"No messages sent within last two weeks were sent by {user.Mention}"
-                    End With
-
+                    embed.Title = "Couldn't Delete Messages"
+                    embed.Description = $"No messages sent within last two weeks were sent by {user.Mention}"
                     Await ctx.RespondAsync(embed:=embed.Build)
                     Return
                 End If

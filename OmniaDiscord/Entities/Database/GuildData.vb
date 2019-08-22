@@ -13,7 +13,7 @@ Namespace Entities.Database
         Public Property DiscJockeys As New List(Of ULong) ' Collection of users allowed to queue music.
         Public Property StaffTitles As New Dictionary(Of ULong, GuildTitle) ' Collection of users with staff titles.
         Public Property LobbyChannels As New List(Of ULong) ' Collection of voice channels that will be treated as lobby channels.
-        Public Property UserPlaylists As New List(Of DiscordUserPlaylist) ' Collection of user created playlists.
+        Public Property UserPlaylists As New List(Of OmniaUserPlaylist) ' Collection of user created playlists.
 
     End Class
 
