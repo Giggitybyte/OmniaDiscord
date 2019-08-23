@@ -610,20 +610,19 @@ Namespace Commands.Modules
                 With embed
                     .Color = DiscordColor.Orange
                     .Title = "Please Wait..."
-                    .Description = "Retrieving information for the provided URL(s)."
+                    .Description = $"Retrieving information for the provided URL{If(trackUrls.Count > 1, "s", String.Empty)}..."
                 End With
-
-                embed = New DiscordEmbedBuilder
 
                 Dim waitMessage = Await ctx.RespondAsync(embed:=embed.Build)
                 Dim retrievalResult = Await MediaRetrievalUtilities.GetMultipleMediaAsync(trackUrls)
                 Await waitMessage.DeleteAsync
 
+                embed = New DiscordEmbedBuilder
+
                 If Not retrievalResult.ValidUrls.Any Then
                     With embed
                         .Color = DiscordColor.Red
-                        .Title = "Invalid URL(s)"
-                        .Description = "URL(s) provided were invalid."
+                        .Description = $"The URL{If(trackUrls.Count > 1, "s", String.Empty)} provided were invalid."
                     End With
 
                     Await ctx.RespondAsync(embed:=embed.Build)
@@ -631,8 +630,12 @@ Namespace Commands.Modules
                 End If
 
                 If retrievalResult.InvalidUrls.Any Then
-                    embed.Description = $"Out of {trackUrls.Count}, only {retrievalResult.ValidUrls.Count} were valid.{Environment.NewLine}"
-                    embed.Description &= $"Invalid URLs: {Formatter.BlockCode(String.Join(", ", retrievalResult.InvalidUrls.Select(Function(u) $"`{u}`")))}"
+                    With embed
+                        .Description = $"{retrievalResult.ValidUrls.Count} out of {trackUrls.Count} URLs were valid.{Environment.NewLine}"
+                        .Description &= $"All valid URLs were added to the playlist.{Environment.NewLine}{Environment.NewLine}"
+                        .Description &= $"Invalid URLs: {Formatter.BlockCode(String.Join(", ", retrievalResult.InvalidUrls))}"
+                        .Color = DiscordColor.Orange
+                    End With
                 Else
                     embed.Color = DiscordColor.SpringGreen
                     embed.Description = $"All tracks were successfully added to `{playlist.Name}`."
