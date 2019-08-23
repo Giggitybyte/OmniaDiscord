@@ -5,7 +5,7 @@ Imports DSharpPlus.Entities
 Imports OmniaDiscord.Utilities
 
 Namespace Commands.Modules
-    Public Class MiscellaneousModule
+    Public Class EmojiModule
         Inherits BaseCommandModule
 
         <Command("emoji")>

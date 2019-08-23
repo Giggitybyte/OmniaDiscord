@@ -43,7 +43,7 @@ Namespace Utilities
                         .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}{media.Author}"
                         .ThumbnailUrl = media.ThumbnailUrl
 
-                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{media.Duration.Humanize(2)}*"
+                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{media.Duration.Humanize(2, maxUnit:=TimeUnit.Hour)}*"
                     End With
 
                 ElseIf media.Type = OmniaMediaType.Album Or media.Type = OmniaMediaType.Playlist Then
