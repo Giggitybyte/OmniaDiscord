@@ -1,8 +1,8 @@
 ﻿Imports System.Text
+Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Converters
 Imports DSharpPlus.CommandsNext.Entities
-Imports DSharpPlus.Entities
 
 Namespace Commands
     Public Class HelpFormatter
@@ -10,7 +10,7 @@ Namespace Commands
 
         Private _isCommand As Boolean
         Private _prefix As String
-        Private ReadOnly _embed As New DiscordEmbedBuilder With {.Color = DiscordColor.CornflowerBlue}
+        Private ReadOnly _strBuilder As New StringBuilder
 
         Public Sub New(ctx As CommandContext)
             MyBase.New(ctx)
@@ -20,37 +20,40 @@ Namespace Commands
         Public Overrides Function WithCommand(cmd As Command) As BaseHelpFormatter
             _isCommand = True
 
-            With _embed
-                .Title = $"{cmd.QualifiedName}"
-                .Description = If(cmd.Description, "Description not set.")
+            _strBuilder.AppendLine(cmd.QualifiedName)
+            _strBuilder.AppendLine(New String("-", cmd.QualifiedName.Count))
+            _strBuilder.AppendLine(If(cmd.Description, "The description for this command was not set."))
 
-                Dim strBuilder As New StringBuilder
-                For Each overload In cmd.Overloads.OrderBy(Function(x) x.Priority)
-                    If Not overload.Arguments.Any Then
-                        strBuilder.AppendLine($"`{_prefix}{cmd.QualifiedName}`")
-                        Continue For
-                    End If
+            Dim aliases = GetCommandAliases(cmd)
+            If aliases.Any Then _strBuilder.AppendLine.AppendLine("aliases::").AppendLine(String.Join(", ", aliases))
 
-                    strBuilder.Append($"`{_prefix}{cmd.QualifiedName} ")
-                    For Each arg As CommandArgument In overload.Arguments
-                        strBuilder.Append($"{If(arg.IsOptional, "(", "[")}{arg.Name}{If(arg.IsOptional, ")", "]")} ")
-                    Next
-                    strBuilder.Append($"`{Environment.NewLine}")
+            Dim usageBuilder As New StringBuilder
+            For Each overload In cmd.Overloads.OrderBy(Function(x) x.Priority)
+                If Not overload.Arguments.Any Then
+                    usageBuilder.AppendLine($"{_prefix}{cmd.QualifiedName}")
+                    Continue For
+                End If
+
+                usageBuilder.Append($"{_prefix}{cmd.QualifiedName} ")
+                For Each arg As CommandArgument In overload.Arguments
+                    usageBuilder.Append($"{If(arg.IsOptional, "(", "[")}{arg.Name}{If(arg.IsOptional, ")", "]")} ")
                 Next
-                If strBuilder.Length > 0 Then .AddField("Usage", strBuilder.ToString)
-
-                .AddField("Type", GetCommandType(cmd), True)
-
-                Dim aliases = GetCommandAliases(cmd)
-                If aliases.Any Then .AddField("Aliases", String.Join(", ", aliases), True)
-            End With
+                usageBuilder.AppendLine()
+            Next
+            If usageBuilder.Length > 0 Then _strBuilder.AppendLine.AppendLine("usage::").Append(usageBuilder.ToString)
 
             If TypeOf cmd Is CommandGroup Then
                 Dim cmdGroup = DirectCast(cmd, CommandGroup)
+
+                If cmdGroup.Children.Any Then
+                    _strBuilder.AppendLine.AppendLine("child commands::")
+                    _strBuilder.AppendLine(String.Join(", ", cmdGroup.Children.Select(Function(c) c.Name)))
+                End If
+
                 If cmdGroup.IsExecutableWithoutSubcommands Then
-                    _embed.WithFooter("This command group can be executed without a child command.")
+                    _strBuilder.AppendLine.AppendLine("// this command can be executed without a child command")
                 Else
-                    _embed.WithFooter("This command group must be executed with a child command.")
+                    _strBuilder.AppendLine.AppendLine("[this command must be executed with a child command]")
                 End If
             End If
 
@@ -58,41 +61,33 @@ Namespace Commands
         End Function
 
         Public Overrides Function WithSubcommands(childCommands As IEnumerable(Of Command)) As BaseHelpFormatter
-            If _isCommand Then
-                _embed.AddField("Child Commands", String.Join(", ", childCommands.Select(Function(cmd As Command) $"`{cmd.Name}`")))
-            Else
-                _embed.Description = String.Join($", ", childCommands.Where(Function(s) s.Name <> "help").Select(Function(cmd As Command) $"`{cmd.Name}`"))
+            If Not _isCommand Then
+                _strBuilder.Append(String.Join($", ", childCommands.Where(Function(s) s.Name.ToLower <> "help").Select(Function(cmd) $"{cmd.Name}")))
             End If
+
             Return Me
         End Function
 
         Public Overrides Function Build() As CommandHelpMessage
+            Dim message = _strBuilder.ToString
+
             If Not _isCommand Then
-                With _embed
-                    .Title = "Available Commands"
-                    .WithFooter("Specify a command to see its usage.")
-                End With
+                Dim builder As New StringBuilder
+                builder.AppendLine("available commands")
+                builder.AppendLine(New String("-", 18))
+                builder.AppendLine(message)
+                builder.AppendLine().AppendLine("// specify a command to see its usage")
+
+                message = builder.ToString
             End If
-            Return New CommandHelpMessage(embed:=_embed)
+
+            Return New CommandHelpMessage(Formatter.BlockCode(message, "asciidoc"))
         End Function
 
         Private Function GetCommandAliases(cmd As Command) As IEnumerable(Of String)
             If Not cmd.Aliases.Any Then Return New List(Of String)
-            If cmd.Parent IsNot Nothing Then Return cmd.Aliases.Select(Function(a) $"`{cmd.Parent.QualifiedName} {a}`")
-            Return cmd.Aliases.Select(Function(a As String) $"`{a}`")
-        End Function
-
-        Private Function GetCommandType(cmd As Command) As String
-            If TypeOf cmd Is CommandGroup Then
-                If cmd.Parent IsNot Nothing Then Return "Command Subgroup"
-                Return "Command Group"
-            End If
-
-            If cmd.Parent IsNot Nothing Then
-                Return "Child Command"
-            End If
-
-            Return "Command"
+            If cmd.Parent IsNot Nothing Then Return cmd.Aliases.Select(Function(a) $"{cmd.Parent.QualifiedName} {a}")
+            Return cmd.Aliases
         End Function
     End Class
 End Namespace

@@ -16,6 +16,7 @@ Imports OmniaDiscord.Entities
 Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
+Imports CommandNotFoundException = DSharpPlus.CommandsNext.Exceptions.CommandNotFoundException
 
 Public Module Omnia
     Sub Main(args As String())
@@ -201,7 +202,9 @@ Public Class Bot
                     builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
                 End If
             Next
-        ElseIf Not (arg.Exception.Message.Contains("No matching subcommands were found") Or arg.Exception.Message.Contains("Could not find a suitable overload")) Then
+        ElseIf TypeOf arg.Exception Is CommandNotFoundException Then
+            ' Do fucking nothing blyat
+        Else
             Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
             builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
             builder.AppendLine($"```{arg.Exception}```")
