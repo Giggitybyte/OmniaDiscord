@@ -5,6 +5,7 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.CommandsNext.Exceptions
 Imports DSharpPlus.Entities
+Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
 Imports DSharpPlus.Lavalink
 Imports Fclp
@@ -92,29 +93,10 @@ Public Class Bot
             AddHandler cmdExtensions(shard).CommandExecuted, Function(arg) CommandExecutedHandler(arg, logger)
         Next
 
-        AddHandler client.DebugLogger.LogMessageReceived, Sub(sender, arg)
-                                                              logger.Print(arg.Level, arg.Application, arg.Message)
-                                                          End Sub
-
-        AddHandler client.GuildCreated, Function(arg)
-                                            Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
-                                            If db.DoesContainGuild(arg.Guild.Id) = False Then db.InitializeNewGuild(arg.Guild.Id)
-                                            Return Task.CompletedTask
-                                        End Function
-
-        AddHandler client.ClientErrored, Function(arg)
-                                             Dim ex As Exception = arg.Exception.InnerException
-                                             Return logger.PrintAsync(LogLevel.Error, arg.EventName, $"'{ex.Message}':{Environment.NewLine}{ex.StackTrace}")
-                                         End Function
-
-        AddHandler client.Ready, Function(arg)
-                                     Dim lavalink = _services.GetRequiredService(Of LavalinkService)
-                                     _services.GetRequiredService(Of LobbySystemService)
-                                     _services.GetRequiredService(Of AdministrationService)
-
-                                     lavalink.InitLavalinkNode(client.ShardClients(0))
-                                     Return Task.CompletedTask
-                                 End Function
+        AddHandler client.DebugLogger.LogMessageReceived, Async Sub(sender, arg) Await logger.PrintAsync(arg.Level, arg.Application, arg.Message)
+        AddHandler client.GuildCreated, AddressOf GuildCreatedHandler
+        AddHandler client.ClientErrored, Function(arg) ClientErroredHandler(arg, logger)
+        AddHandler client.Ready, AddressOf ClientReadyHandler
 
         Await client.StartAsync
         Await Task.Delay(-1)
@@ -130,13 +112,34 @@ Public Class Bot
             Return Await Task.FromResult(msg.GetStringPrefixLength(Config.DefaultPrefix))
         End If
 
-        Dim discord As DiscordShardedClient = _services.GetRequiredService(Of DiscordShardedClient)
+        Dim discord = _services.GetRequiredService(Of DiscordShardedClient)
         If msg.GetMentionPrefixLength(discord.CurrentUser) <> -1 Then
-            Dim botUser As DiscordUser = _services.GetRequiredService(Of DiscordShardedClient).CurrentUser
-            Return Await Task.FromResult(msg.GetMentionPrefixLength(botUser))
+            Return Await Task.FromResult(msg.GetMentionPrefixLength(discord.CurrentUser))
         End If
 
         Return Await Task.FromResult(-1)
+    End Function
+
+    Private Function GuildCreatedHandler(arg As GuildCreateEventArgs) As Task
+        Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
+        If db.DoesContainGuild(arg.Guild.Id) = False Then db.InitializeNewGuild(arg.Guild.Id)
+        Return Task.CompletedTask
+    End Function
+
+    Private Function ClientErroredHandler(arg As ClientErrorEventArgs, logger As LogService) As Task
+        Dim ex As Exception = arg.Exception.InnerException
+        Return logger.PrintAsync(LogLevel.Error, arg.EventName, $"'{ex.Message}':{Environment.NewLine}{ex.StackTrace}")
+    End Function
+
+    Private Function ClientReadyHandler(arg As ReadyEventArgs) As Task
+        Dim client = _services.GetRequiredService(Of DiscordShardedClient)
+        Dim lavalink = _services.GetRequiredService(Of LavalinkService)
+
+        _services.GetRequiredService(Of LobbySystemService)
+        _services.GetRequiredService(Of AdministrationService)
+        lavalink.InitLavalinkNode(client.ShardClients(0))
+
+        Return Task.CompletedTask
     End Function
 
     Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
@@ -153,13 +156,11 @@ Public Class Bot
             For Each failedCheck In exception.FailedChecks
                 If TypeOf failedCheck Is RequireBotPermissionsAttribute Then
                     Dim check = DirectCast(failedCheck, RequireBotPermissionsAttribute)
-                    builder.AppendLine($"I don't have the right permissions to execute this command.")
-                    builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
+                    builder.AppendLine($"Omnia needs the following permissions to execute this command: {check.Permissions.ToPermissionString}")
 
                 ElseIf TypeOf failedCheck Is RequireUserPermissionsAttribute Then
                     Dim check = DirectCast(failedCheck, RequireUserPermissionsAttribute)
-                    builder.AppendLine($"You don't have the right permissions to use this command.")
-                    builder.AppendLine($"Required permissions: {check.Permissions.ToPermissionString}.")
+                    builder.AppendLine($"You need the following permissions to use this command: {check.Permissions.ToPermissionString}")
 
                 ElseIf TypeOf failedCheck Is CooldownAttribute Then
                     Dim check = DirectCast(failedCheck, CooldownAttribute)
