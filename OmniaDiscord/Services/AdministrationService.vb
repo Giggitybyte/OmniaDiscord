@@ -21,9 +21,9 @@ Namespace Services
 
         ' Re-adds muted role to user who left the guild and rejoined.
         Private Async Function MemberJoinHandler(e As GuildMemberAddEventArgs) As Task
-            If Not _db.GetGuildData(e.Guild.Id).MutedMembers.Contains(e.Member.Id) Then Return
+            If Not _db.GetGuildEntry(e.Guild.Id).Data.MutedMembers.Contains(e.Member.Id) Then Return
 
-            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildEntry(e.Guild.Id).Data.MutedRoleId
             Dim role As DiscordRole
 
             If Not e.Guild.Roles.ContainsKey(roleId) Then role = Await CreateGuildMutedRoleAsync(e.Guild)
@@ -34,15 +34,15 @@ Namespace Services
 
         ' Removes title from users that leave, are kicked, or are banned.
         Private Function MemberLeaveHandler(e As GuildMemberRemoveEventArgs) As Task
-            If _db.GetGuildData(e.Guild.Id).StaffTitles.ContainsKey(e.Member.Id) Then _db.GetGuildData(e.Guild.Id).StaffTitles.Remove(e.Guild.Id)
+            If _db.GetGuildEntry(e.Guild.Id).Data.TitleHolders.ContainsKey(e.Member.Id) Then _db.GetGuildEntry(e.Guild.Id).Data.TitleHolders.Remove(e.Guild.Id)
             Return Task.CompletedTask
         End Function
 
         ' Re-adds muted role to user if it is manually removed from them.
         Private Async Function MemberUpdatedHandler(e As GuildMemberUpdateEventArgs) As Task
-            If Not _db.GetGuildData(e.Guild.Id).MutedMembers.Contains(e.Member.Id) Then Return
+            If Not _db.GetGuildEntry(e.Guild.Id).Data.MutedMembers.Contains(e.Member.Id) Then Return
 
-            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildEntry(e.Guild.Id).Data.MutedRoleId
             If roleId = 0 Then Return
 
             If e.RolesBefore.Select(Function(r) r.Id).Contains(roleId) AndAlso Not e.RolesAfter.Select(Function(r) r.Id).Contains(roleId) Then
@@ -52,16 +52,16 @@ Namespace Services
 
         ' Re-creates muted role if it is deleted.
         Private Async Function RoleDeletedHandler(e As GuildRoleDeleteEventArgs) As Task
-            If e.Role.Id = _db.GetGuildData(e.Guild.Id).MutedRoleId Then
-                Dim settings = _db.GetGuildData(e.Guild.Id)
-                settings.MutedRoleId = (Await CreateGuildMutedRoleAsync(e.Guild)).Id
-                _db.UpdateGuildData(settings)
+            If e.Role.Id = _db.GetGuildEntry(e.Guild.Id).Data.MutedRoleId Then
+                Dim guild = _db.GetGuildEntry(e.Guild.Id)
+                guild.Data.MutedRoleId = (Await CreateGuildMutedRoleAsync(e.Guild)).Id
+                _db.UpdateGuildEntry(guild)
             End If
         End Function
 
         ' Adds muted role overwrite to new channels.
         Private Async Function ChannelCreatedHandler(e As ChannelCreateEventArgs) As Task
-            Dim roleId = _db.GetGuildData(e.Guild.Id).MutedRoleId
+            Dim roleId = _db.GetGuildEntry(e.Guild.Id).Data.MutedRoleId
             Dim role As DiscordRole
 
             If roleId = 0 Then Return
@@ -73,9 +73,9 @@ Namespace Services
             Dim role = Await guild.CreateRoleAsync("Muted", Permissions.None, DiscordColor.Black, False, False, "Muted role generation for Omnia.")
             Await role.ModifyPositionAsync(0, "Muted role generation for Omnia.")
 
-            Dim settings = _db.GetGuildData(guild.Id)
-            settings.MutedRoleId = role.Id
-            _db.UpdateGuildData(settings)
+            Dim dbGuild = _db.GetGuildEntry(guild.Id)
+            dbGuild.Data.MutedRoleId = role.Id
+            _db.UpdateGuildEntry(dbGuild)
 
             For Each channel In guild.Channels.Values
                 Await channel.AddOverwriteAsync(role, Permissions.None, Permissions.SendMessages Or Permissions.Speak, "Muted role configuration for Omnia.")

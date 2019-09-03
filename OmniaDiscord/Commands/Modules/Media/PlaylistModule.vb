@@ -27,7 +27,7 @@ Namespace Commands.Modules.Media
             <Command("create")>
             <Description("Create a new playlist with the specified name.")>
             Public Async Function CreatePlaylistCommand(ctx As CommandContext, <RemainingText> playlistName As String) As Task
-                If GuildData.UserPlaylists.Any(Function(p) p.Name.ToLower = playlistName.ToLower) Then
+                If DbGuild.Data.UserPlaylists.Any(Function(p) p.Name.ToLower = playlistName.ToLower) Then
                     Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                         .Color = DiscordColor.Red,
                         .Description = $"Cannot create playlist; a playlist with that name already exists."
@@ -41,8 +41,7 @@ Namespace Commands.Modules.Media
                     .ThumbnailUrl = $"{Bot.Config.ResourceUrl}/assets/omnia/MediaDefault.png"
                 }
 
-                GuildData.UserPlaylists.Add(playlist)
-                UpdateGuildData()
+                DbGuild.Data.UserPlaylists.Add(playlist)
 
                 Dim emoji = DiscordEmoji.FromName(ctx.Client, ":ballot_box_with_check:")
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
@@ -55,7 +54,7 @@ Namespace Commands.Modules.Media
             <Description("Delete a playlist from the database.")>
             Public Async Function DeletePlaylistCommand(ctx As CommandContext, <RemainingText> playlistName As String) As Task
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
@@ -73,8 +72,7 @@ Namespace Commands.Modules.Media
                     Return
                 End If
 
-                GuildData.UserPlaylists.Remove(playlist)
-                UpdateGuildData()
+                DbGuild.Data.UserPlaylists.Remove(playlist)
 
                 Dim emoji = DiscordEmoji.FromName(ctx.Client, ":ballot_box_with_check:")
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
@@ -89,7 +87,7 @@ Namespace Commands.Modules.Media
                 If Not trackUrls.Any Then Return
 
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     embed.Description = "Cannot modify playlist; no playlists exist with that name."
@@ -103,7 +101,7 @@ Namespace Commands.Modules.Media
                     Return
                 End If
 
-                GuildData.UserPlaylists.Remove(playlist)
+                DbGuild.Data.UserPlaylists.Remove(playlist)
 
                 With embed
                     .Color = DiscordColor.Orange
@@ -140,8 +138,7 @@ Namespace Commands.Modules.Media
                 End If
 
                 playlist.Tracks.AddRange(retrievalResult.ValidUrls)
-                GuildData.UserPlaylists.Add(playlist)
-                UpdateGuildData()
+                DbGuild.Data.UserPlaylists.Add(playlist)
 
                 Await ctx.RespondAsync(embed:=embed.Build)
             End Function
@@ -149,7 +146,7 @@ Namespace Commands.Modules.Media
             <Command("tracks"), Aliases("list")>
             <Description("Displays all tracks contained within a playlist.")>
             Public Async Function ListTracksCommand(ctx As CommandContext, <RemainingText> playlistName As String) As Task
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     Dim embed As New DiscordEmbedBuilder With {
@@ -203,7 +200,7 @@ Namespace Commands.Modules.Media
                 If Not trackNumbers.Any Then Return
 
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     embed.Description = "Cannot modify playlist; no playlists exist with that name."
@@ -224,7 +221,7 @@ Namespace Commands.Modules.Media
                     Return
                 End If
 
-                GuildData.UserPlaylists.Remove(playlist)
+                DbGuild.Data.UserPlaylists.Remove(playlist)
 
                 For Each track In trackNumbers
                     playlist.Tracks.RemoveAt(track - 1)
@@ -235,8 +232,7 @@ Namespace Commands.Modules.Media
                     .Description = $"Removed track(s) {String.Join(", ", trackNumbers.Select(Function(n) $"`{n}`"))}"
                 End With
 
-                GuildData.UserPlaylists.Add(playlist)
-                UpdateGuildData()
+                DbGuild.Data.UserPlaylists.Add(playlist)
 
                 Await ctx.RespondAsync(embed:=embed.Build)
             End Function
@@ -245,7 +241,7 @@ Namespace Commands.Modules.Media
             <Description("Add all tracks from a playlist to the playback queue.")>
             Public Async Function EnqueuePlaylistCommand(ctx As CommandContext, <RemainingText> playlistName As String) As Task
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     embed.Description = "Cannot queue playlist; no playlists exist with that name."
@@ -281,7 +277,7 @@ Namespace Commands.Modules.Media
             <Description("Add or change the thumbnail for a playlist.")>
             Public Async Function PlaylistThumbnailCommand(ctx As CommandContext, playlistName As String, thumbnailUrl As String) As Task
                 Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
-                Dim playlist = GuildData.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
+                Dim playlist = DbGuild.Data.UserPlaylists.FirstOrDefault(Function(p) p.Name.ToLower = playlistName.ToLower)
 
                 If playlist Is Nothing Then
                     embed.Description = "Cannot modify playlist; no playlists exist with that name."
@@ -295,10 +291,9 @@ Namespace Commands.Modules.Media
                     Return
                 End If
 
-                GuildData.UserPlaylists.Remove(playlist)
+                DbGuild.Data.UserPlaylists.Remove(playlist)
                 playlist.ThumbnailUrl = thumbnailUrl
-                GuildData.UserPlaylists.Add(playlist)
-                UpdateGuildData()
+                DbGuild.Data.UserPlaylists.Add(playlist)
 
                 With embed
                     Dim emoji = DiscordEmoji.FromName(ctx.Client, ":ballot_box_with_check:")

@@ -104,12 +104,12 @@ Public Class Bot
     End Function
 
     Private Async Function PrefixResolver(msg As DiscordMessage) As Task(Of Integer)
-        Dim settings As GuildSettings = _services.GetRequiredService(Of DatabaseService).GetGuildSettings(msg.Channel.GuildId)
-        If settings.Prefix IsNot Nothing AndAlso msg.GetStringPrefixLength(settings.Prefix) <> -1 Then
-            Return Await Task.FromResult(msg.GetStringPrefixLength(settings.Prefix))
+        Dim guild = _services.GetRequiredService(Of DatabaseService).GetGuildEntry(msg.Channel.GuildId)
+        If guild.Settings.Prefix IsNot Nothing AndAlso msg.GetStringPrefixLength(guild.Settings.Prefix) <> -1 Then
+            Return Await Task.FromResult(msg.GetStringPrefixLength(guild.Settings.Prefix))
         End If
 
-        If msg.GetStringPrefixLength(Config.DefaultPrefix) <> -1 Then
+        If guild.Settings.Prefix Is Nothing AndAlso msg.GetStringPrefixLength(Config.DefaultPrefix) <> -1 Then
             Return Await Task.FromResult(msg.GetStringPrefixLength(Config.DefaultPrefix))
         End If
 
@@ -123,7 +123,7 @@ Public Class Bot
 
     Private Function GuildCreatedHandler(arg As GuildCreateEventArgs) As Task
         Dim db As DatabaseService = _services.GetRequiredService(Of DatabaseService)
-        If db.DoesContainGuild(arg.Guild.Id) = False Then db.InitializeNewGuild(arg.Guild.Id)
+        db.GetGuildEntry(arg.Guild.Id)
         Return Task.CompletedTask
     End Function
 
@@ -144,7 +144,8 @@ Public Class Bot
     End Function
 
     Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
-        If arg.Command Is Nothing Then Return
+        If arg.Command Is Nothing Or TypeOf arg.Exception Is CommandNotFoundException Or
+            arg.Exception.Message.Contains("Could not find a suitable overload for the command") Then Return
 
         Dim builder As New StringBuilder
         Dim channelPerms = arg.Context.Channel.PermissionsFor(arg.Context.Guild.CurrentMember)
@@ -180,30 +181,28 @@ Public Class Bot
                     builder.AppendLine($"`{arg.Command.QualifiedName}` is on cooldown {scope}. Remaining time: {remainingTime}.")
 
                 ElseIf TypeOf failedCheck Is RequireGuildAttribute Then
-                    builder.AppendLine($"This command can only be used on a server.")
+                    builder.AppendLine("This command can only be used on a server.")
 
                 ElseIf TypeOf failedCheck Is RequireDirectMessageAttribute Then
-                    builder.AppendLine($"This command can only be used in a direct message.")
+                    builder.AppendLine("This command can only be used in a direct message.")
 
                 ElseIf TypeOf failedCheck Is RequireNsfwAttribute Then
-                    builder.AppendLine($"This command can only be used in channels marked as NSFW.")
+                    builder.AppendLine("This command can only be used in channels marked as NSFW.")
 
                 ElseIf TypeOf failedCheck Is RequireOwnerAttribute Then
-                    builder.AppendLine($"This command can only be used by my creator.")
+                    builder.AppendLine("This command can only be used by my creator.")
 
                 ElseIf TypeOf failedCheck Is RequireGuildOwnerAttribute Then
-                    builder.AppendLine($"This command can only be used by the server owner.")
+                    builder.AppendLine("This command can only be used by the server owner.")
 
                 ElseIf TypeOf failedCheck Is RequireStaffAttribute Then
-                    builder.AppendLine($"This command can only be used by those with a staff title.")
+                    builder.AppendLine("This command can only be used by those with a staff title.")
 
                 ElseIf TypeOf failedCheck Is RequireTitleAttribute Then
                     Dim check = DirectCast(failedCheck, RequireTitleAttribute)
                     builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
                 End If
             Next
-        ElseIf TypeOf arg.Exception Is CommandNotFoundException Then
-            ' Do fucking nothing blyat
         Else
             Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
             builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")

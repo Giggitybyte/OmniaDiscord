@@ -29,7 +29,7 @@ Namespace Commands.Modules
 
             For Each title As GuildTitle In [Enum].GetValues(GetType(GuildTitle))
                 Dim users As New List(Of String)
-                For Each staffMember In GuildData.StaffTitles.Where(Function(kvp) kvp.Value = title)
+                For Each staffMember In DbGuild.Data.TitleHolders.Where(Function(kvp) kvp.Value = title)
                     Dim user As DiscordMember = Await ctx.Guild.GetMemberAsync(staffMember.Key)
                     users.Add(user.Mention)
                 Next
@@ -65,7 +65,7 @@ Namespace Commands.Modules
                     .Description = $"You do not have the minimum title required to assign `{title.ToString}` to users."
                 End With
 
-            ElseIf GuildData.StaffTitles.ContainsKey(user.Id) AndAlso GuildData.StaffTitles(user.Id) = title Then
+            ElseIf DbGuild.Data.TitleHolders.ContainsKey(user.Id) AndAlso DbGuild.Data.TitleHolders(user.Id) = title Then
                 With embed
                     .Title = "Couldn't Assign Title"
                     .Description = $"{user.Mention} already has the title of `{title.ToString}`!"
@@ -78,8 +78,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            GuildData.StaffTitles(user.Id) = title
-            UpdateGuildData()
+            DbGuild.Data.TitleHolders(user.Id) = title
 
             With embed
                 .Color = DiscordColor.SpringGreen
@@ -97,27 +96,24 @@ Namespace Commands.Modules
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Title = "Couldn't Remove Title"}
             Dim title As GuildTitle
 
-            If Not GuildData.StaffTitles.ContainsKey(user.Id) Then
+            If Not DbGuild.Data.TitleHolders.ContainsKey(user.Id) Then
                 embed.Description = $"{user.Mention} does not have a title."
                 Await ctx.RespondAsync(embed:=embed.Build)
                 Return
             End If
 
-            title = GuildData.StaffTitles(user.Id)
+            title = DbGuild.Data.TitleHolders(user.Id)
 
             If Not DoesMeetMinimumTitleRequirement(ctx, title) Then
                 embed.Description = $"You do not have the minimum title required to remove `{title.ToString}` from users."
-
             Else
-                GuildData.StaffTitles.Remove(user.Id)
-                UpdateGuildData()
+                DbGuild.Data.TitleHolders.Remove(user.Id)
 
                 With embed
                     .Color = DiscordColor.SpringGreen
                     .Title = "Title Successfully Removed"
                     .Description = $"{user.Mention} no longer has the title of `{title.ToString}`"
                 End With
-
             End If
 
             Await ctx.RespondAsync(embed:=embed.Build)
@@ -125,14 +121,14 @@ Namespace Commands.Modules
 
         Private Function DoesMeetMinimumTitleRequirement(ctx As CommandContext, targetTitle As GuildTitle) As Boolean
             If ctx.Guild.Owner.Id = ctx.Member.Id Then Return True
-            If Not GuildData.StaffTitles.ContainsKey(ctx.Member.Id) Then Return False
+            If Not DbGuild.Data.TitleHolders.ContainsKey(ctx.Member.Id) Then Return False
 
             Dim validTitles As New List(Of GuildTitle)
             For Each title As GuildTitle In [Enum].GetValues(GetType(GuildTitle)).Cast(Of GuildTitle)
                 If title > targetTitle Then validTitles.Add(title)
             Next
 
-            Return validTitles.Contains(GuildData.StaffTitles(ctx.Member.Id))
+            Return validTitles.Contains(DbGuild.Data.TitleHolders(ctx.Member.Id))
         End Function
 
     End Class

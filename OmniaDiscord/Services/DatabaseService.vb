@@ -1,83 +1,42 @@
-﻿Imports LiteDB
+﻿Imports DSharpPlus
+Imports LiteDB
 Imports OmniaDiscord.Entities.Database
 
 Namespace Services
-
     Public Class DatabaseService
-        Private ReadOnly _db As LiteDatabase
-        Private ReadOnly _logger As LogService
+        Private _db As LiteDatabase
 
         Sub New(logger As LogService)
-            _db = New LiteDatabase("Omnia.db")
-            _logger = logger
+            _db = New LiteDatabase($"filename=Omnia.db;password={Bot.Config.DatabasePassword}")
+            _db.GetCollection(Of GuildEntry)("guilds").EnsureIndex(Function(e) e.GuildId)
+            _db.GetCollection(Of UserEntry)("users").EnsureIndex(Function(e) e.UserId)
 
-            Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
-            Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
-
-            guildData.EnsureIndex(Function(d) d.GuildId)
-            guildSettings.EnsureIndex(Function(s) s.GuildId)
-
-            _logger.Print(DSharpPlus.LogLevel.Info, "Database Service", "Service initalized.")
+            logger.Print(LogLevel.Info, "Database Service", "Service constructed.")
         End Sub
 
-        Public Sub InitializeNewGuild(guildId As ULong)
-            Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
-            Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
+        Public Function GetGuildEntry(guildId As ULong) As GuildEntry
+            Dim entry = _db.GetCollection(Of GuildEntry)("guilds").FindOne(Function(g) g.GuildId = guildId)
 
-            Dim data As New GuildData With {.GuildId = guildId}
-            Dim settings As New GuildSettings With {.GuildId = guildId}
-
-            guildData.Insert(data)
-            guildSettings.Insert(settings)
-
-            _logger.Print(DSharpPlus.LogLevel.Info, "Database Service", $"Created new database entries for guild {guildId}.")
-        End Sub
-
-        Public Function GetGuildData(guildId As ULong) As GuildData
-            If Not DoesContainGuild(guildId) Then InitializeNewGuild(guildId)
-            Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
-            Dim data As GuildData = guildData.FindOne(Function(d) d.GuildId = guildId)
-
-            Return data
-        End Function
-
-        Public Sub UpdateGuildData(updatedData As GuildData)
-            Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
-            Dim success As Boolean = guildData.Update(updatedData)
-
-            If success Then
-                _logger.Print(DSharpPlus.LogLevel.Debug, "Database Service", $"Updated data for guild {updatedData.GuildId}.")
-            Else
-                _logger.Print(DSharpPlus.LogLevel.Warning, "Database Service", $"Couldn't update guild data for guild {updatedData.GuildId}.")
+            If entry Is Nothing Then
+                entry = New GuildEntry With {.GuildId = guildId}
+                _db.GetCollection(Of GuildEntry)("guilds").Insert(entry)
             End If
-        End Sub
 
-        Public Function GetGuildSettings(guildId As ULong) As GuildSettings
-            If Not DoesContainGuild(guildId) Then InitializeNewGuild(guildId)
-            Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
-            Dim settings As GuildSettings = guildSettings.FindOne(Function(s) s.GuildId = guildId)
-
-            Return settings
+            Return entry
         End Function
 
-        Public Sub UpdateGuildSettings(updatedSettings As GuildSettings)
-            Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
-            Dim success As Boolean = guildSettings.Update(updatedSettings)
-
-            If success Then
-                _logger.Print(DSharpPlus.LogLevel.Debug, "Database Service", $"Updated settings for guild {updatedSettings.GuildId}.")
-            Else
-                _logger.Print(DSharpPlus.LogLevel.Warning, "Database Service", $"Couldn't update settings for guild {updatedSettings.GuildId}.")
-            End If
+        Public Sub UpdateGuildEntry(entry As GuildEntry)
+            _db.GetCollection(Of GuildEntry)("guilds").Upsert(entry)
         End Sub
 
-        Public Function DoesContainGuild(guildId As ULong) As Boolean
-            Dim guildData As LiteCollection(Of GuildData) = _db.GetCollection(Of GuildData)("guildData")
-            Dim guildSettings As LiteCollection(Of GuildSettings) = _db.GetCollection(Of GuildSettings)("guildSettings")
-
-            Return guildData.Exists(Function(d) d.GuildId = guildId) And guildSettings.Exists(Function(s) s.GuildId = guildId)
+        Public Function GetUserEntry(userId As ULong) As UserEntry
+            Dim entry = _db.GetCollection(Of UserEntry)("users").FindOne(Function(g) g.UserId = userId)
+            If entry Is Nothing Then entry = New UserEntry With {.UserId = userId}
+            Return entry
         End Function
 
+        Public Sub UpdateUserEntry(entry As UserEntry)
+            _db.GetCollection(Of UserEntry)("users").Upsert(entry)
+        End Sub
     End Class
-
 End Namespace

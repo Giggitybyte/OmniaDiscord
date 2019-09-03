@@ -24,10 +24,10 @@ Namespace Services
 
         Private Async Function LobbySystemManager(e As VoiceStateUpdateEventArgs) As Task
             ' Return if user is a bot or the lobby system is not enabled on this guild.
-            If e.User.IsBot OrElse Not _db.GetGuildSettings(e.Guild.Id).IsLobbySystemEnabled Then Return
+            If e.User.IsBot OrElse Not _db.GetGuildEntry(e.Guild.Id).Settings.IsLobbySystemEnabled Then Return
 
             ' If leave channel is a lobby channel, remove user from the queue for that channel.
-            Dim data = _db.GetGuildData(e.Guild.Id)
+            Dim data = _db.GetGuildEntry(e.Guild.Id).Data
 
             If e.Before?.Channel IsNot Nothing AndAlso
                 data.LobbyChannels.Contains(e.Before.Channel.Id) AndAlso
@@ -80,7 +80,7 @@ Namespace Services
 
 #Disable Warning BC42358
         Private Async Function GeneratedChannelManager(e As VoiceStateUpdateEventArgs) As Task
-            If Not _db.GetGuildSettings(e.Guild.Id).IsLobbySystemEnabled Then Return
+            If Not _db.GetGuildEntry(e.Guild.Id).Settings.IsLobbySystemEnabled Then Return
 
             ' Keep generated channels full.
             If e.Before?.Channel IsNot Nothing AndAlso _generatedChannels.ContainsKey(e.Before.Channel.Id) Then
@@ -137,7 +137,7 @@ Namespace Services
                 End If
 
                 ' Top off generated channels with users.
-                If _db.GetGuildData(e.Guild.Id).LobbyChannels.Contains(e.After.Channel.Id) Then
+                If _db.GetGuildEntry(e.Guild.Id).Data.LobbyChannels.Contains(e.After.Channel.Id) Then
                     Dim lobbyChan = e.After.Channel
                     Dim user = e.Guild.Members(e.User.Id)
                     Dim genChans As New List(Of DiscordChannel)
@@ -184,10 +184,10 @@ Namespace Services
                 _leaveTokens.TryRemove(e.Channel.Id, Nothing)
             End If
 
-            Dim data = _db.GetGuildData(e.Guild.Id)
-            If Not data.LobbyChannels.Contains(e.Channel.Id) Then Return Task.CompletedTask
-            data.LobbyChannels.Remove(e.Channel.Id)
-            _db.UpdateGuildData(data)
+            Dim guild = _db.GetGuildEntry(e.Guild.Id)
+            If Not guild.Data.LobbyChannels.Contains(e.Channel.Id) Then Return Task.CompletedTask
+            guild.Data.LobbyChannels.Remove(e.Channel.Id)
+            _db.UpdateGuildEntry(guild)
 
             Return Task.CompletedTask
         End Function

@@ -22,15 +22,15 @@ Namespace Entities.Attributes
         Public Overrides Function ExecuteCheckAsync(ctx As CommandContext, help As Boolean) As Task(Of Boolean)
             If ctx.Guild.Owner.Id = ctx.Member.Id Then Return Task.FromResult(True)
 
-            Dim data As GuildData = ctx.Services.GetRequiredService(Of DatabaseService).GetGuildData(ctx.Guild.Id)
-            If Not data.StaffTitles.ContainsKey(ctx.Member.Id) Then Return Task.FromResult(False)
+            Dim guild = ctx.Services.GetRequiredService(Of DatabaseService).GetGuildEntry(ctx.Guild.Id)
+            If Not guild.Data.TitleHolders.ContainsKey(ctx.Member.Id) Then Return Task.FromResult(False)
 
             Dim validTitles As New List(Of GuildTitle)
             For Each title As GuildTitle In [Enum].GetValues(GetType(GuildTitle)).Cast(Of GuildTitle)
                 If title >= _MinimumTitle Then validTitles.Add(title)
             Next
 
-            Return Task.FromResult(validTitles.Contains(data.StaffTitles(ctx.Member.Id)))
+            Return Task.FromResult(validTitles.Contains(guild.Data.TitleHolders(ctx.Member.Id)))
         End Function
 
     End Class

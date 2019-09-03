@@ -18,7 +18,7 @@ Namespace Commands.Modules
                 .Title = "Lobby Channels"
             }
 
-            For Each channelId In GuildData.LobbyChannels
+            For Each channelId In DbGuild.Data.LobbyChannels
                 Dim channel As DiscordChannel
                 If Not ctx.Guild.Channels.TryGetValue(channelId, channel) Then Continue For
                 embed.Description &= $"{channel.Mention}{Environment.NewLine}"
@@ -39,7 +39,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            If GuildData.LobbyChannels.Contains(channel.Id) Then
+            If DbGuild.Data.LobbyChannels.Contains(channel.Id) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                     .Color = DiscordColor.Red,
                     .Description = $"{channel.Mention} is already a lobby channel."
@@ -47,15 +47,14 @@ Namespace Commands.Modules
                 Return
             End If
 
-            GuildData.LobbyChannels.Add(channel.Id)
-            UpdateGuildData()
+            DbGuild.Data.LobbyChannels.Add(channel.Id)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
         <Command("remove")>
         <Description("Removes a channel from the lobby channel list.")>
         Public Async Function RemoveLobbyCommand(ctx As CommandContext, channel As DiscordChannel) As Task
-            If Not GuildData.LobbyChannels.Contains(channel.Id) Then
+            If Not DbGuild.Data.LobbyChannels.Contains(channel.Id) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                     .Color = DiscordColor.Red,
                     .Description = $"{channel.Mention} is not a lobby channel."
@@ -63,8 +62,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            GuildData.LobbyChannels.Remove(channel.Id)
-            UpdateGuildData()
+            DbGuild.Data.LobbyChannels.Remove(channel.Id)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
     End Class

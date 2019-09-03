@@ -30,21 +30,20 @@ Namespace Commands.Modules
                 Return
             End If
 
-            If Not GuildData.MemberWarnings.ContainsKey(user.Id) Then GuildData.MemberWarnings.Add(user.Id, 0)
-            GuildData.MemberWarnings(user.Id) += 1
+            If Not DbGuild.Data.MemberWarnings.ContainsKey(user.Id) Then DbGuild.Data.MemberWarnings.Add(user.Id, 0)
+            DbGuild.Data.MemberWarnings(user.Id) += 1
 
             Dim embed As New DiscordEmbedBuilder With {
                 .Color = DiscordColor.SpringGreen,
-                .Description = $"{user.Mention} now has {GuildData.MemberWarnings(user.Id)} warnings."
+                .Description = $"{user.Mention} now has {DbGuild.Data.MemberWarnings(user.Id)} warnings."
             }
 
-            If GuildData.MemberWarnings(user.Id) >= 3 Then
+            If DbGuild.Data.MemberWarnings(user.Id) >= 3 Then
                 embed.Description &= $"{Environment.NewLine}This user has been kicked."
                 Await user.RemoveAsync(reason:=$"Accumulated 3 warnings. Responsible user: {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})")
-                GuildData.MemberWarnings.Remove(user.Id)
+                DbGuild.Data.MemberWarnings.Remove(user.Id)
             End If
 
-            UpdateGuildData()
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
@@ -55,7 +54,7 @@ Namespace Commands.Modules
             If user Is Nothing Then user = ctx.Member
             Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                 .Color = DiscordColor.CornflowerBlue,
-                .Description = $"{user.Mention} has {If(GuildData.MemberWarnings.ContainsKey(user.Id), GuildData.MemberWarnings(user.Id), 0)} warnings."
+                .Description = $"{user.Mention} has {If(DbGuild.Data.MemberWarnings.ContainsKey(user.Id), DbGuild.Data.MemberWarnings(user.Id), 0)} warnings."
             })
         End Function
 
@@ -71,7 +70,7 @@ Namespace Commands.Modules
                 Return
             End If
 
-            If Not GuildData.MemberWarnings.ContainsKey(user.Id) OrElse GuildData.MemberWarnings(user.Id) = 0 Then
+            If Not DbGuild.Data.MemberWarnings.ContainsKey(user.Id) OrElse DbGuild.Data.MemberWarnings(user.Id) = 0 Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                     .Color = DiscordColor.Red,
                     .Description = $"{user.Mention} does not have any warnings to forgive."
@@ -79,14 +78,13 @@ Namespace Commands.Modules
                 Return
             End If
 
-            GuildData.MemberWarnings(user.Id) -= 1
+            DbGuild.Data.MemberWarnings(user.Id) -= 1
             Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                 .Color = DiscordColor.SpringGreen,
-                .Description = $"{user.Mention} now has {GuildData.MemberWarnings(user.Id)} warnings."
+                .Description = $"{user.Mention} now has {DbGuild.Data.MemberWarnings(user.Id)} warnings."
             })
 
-            If GuildData.MemberWarnings(user.Id) = 0 Then GuildData.MemberWarnings.Remove(user.Id)
-            UpdateGuildData()
+            If DbGuild.Data.MemberWarnings(user.Id) = 0 Then DbGuild.Data.MemberWarnings.Remove(user.Id)
         End Function
 
         <Command("mute")>
@@ -96,20 +94,20 @@ Namespace Commands.Modules
         Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             Dim role As DiscordRole
 
-            If GuildData.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(GuildData.MutedRoleId) Then
+            If DbGuild.Data.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(DbGuild.Data.MutedRoleId) Then
                 Dim message = Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Orange, .Description = "Configuring muted role..."})
                 role = Await _adminService.CreateGuildMutedRoleAsync(ctx.Guild)
                 Await message.DeleteAsync
             End If
 
-            If role Is Nothing Then role = ctx.Guild.Roles(GuildData.MutedRoleId)
+            If role Is Nothing Then role = ctx.Guild.Roles(DbGuild.Data.MutedRoleId)
 
             If user.Id = ctx.Member.Id Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "You cannot mute yourself."})
                 Return
             End If
 
-            If GuildData.MutedMembers.Contains(user.Id) AndAlso user.Roles.FirstOrDefault(Function(r) r.Id = role.Id) IsNot Nothing Then
+            If DbGuild.Data.MutedMembers.Contains(user.Id) AndAlso user.Roles.FirstOrDefault(Function(r) r.Id = role.Id) IsNot Nothing Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "This user is already muted."})
                 Return
             End If
@@ -119,9 +117,7 @@ Namespace Commands.Modules
 
             Await user.GrantRoleAsync(role, logReason)
             If Not ctx.Guild.Members(user.Id).VoiceState?.IsServerMuted Then Await ctx.Guild.Members(user.Id).SetMuteAsync(True, logReason)
-
-            GuildData.MutedMembers.Add(user.Id)
-            UpdateGuildData()
+            DbGuild.Data.MutedMembers.Add(user.Id)
 
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
@@ -131,16 +127,15 @@ Namespace Commands.Modules
         <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function UnmuteCommand(ctx As CommandContext, user As DiscordMember) As Task
-            If Not GuildData.MutedMembers.Contains(user.Id) Then
+            If Not DbGuild.Data.MutedMembers.Contains(user.Id) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Description = "This user is not muted."})
                 Return
             End If
 
-            GuildData.MutedMembers.Remove(user.Id)
-            UpdateGuildData()
+            DbGuild.Data.MutedMembers.Remove(user.Id)
 
             Dim logReason = $"unmuted by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id})"
-            If ctx.Guild.Roles.ContainsKey(GuildData.MutedRoleId) Then Await user.RevokeRoleAsync(ctx.Guild.Roles(GuildData.MutedRoleId), logReason)
+            If ctx.Guild.Roles.ContainsKey(DbGuild.Data.MutedRoleId) Then Await user.RevokeRoleAsync(ctx.Guild.Roles(DbGuild.Data.MutedRoleId), logReason)
             If user.VoiceState?.IsServerMuted Then Await user.SetMuteAsync(False, logReason)
 
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))

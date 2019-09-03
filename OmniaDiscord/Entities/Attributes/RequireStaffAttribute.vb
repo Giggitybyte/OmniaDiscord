@@ -12,8 +12,8 @@ Namespace Entities.Attributes
 
         Public Overrides Function ExecuteCheckAsync(ctx As CommandContext, help As Boolean) As Task(Of Boolean)
             If ctx.Guild.Owner.Id = ctx.Member.Id Then Return Task.FromResult(True)
-            Dim data As GuildData = ctx.Services.GetService(Of DatabaseService).GetGuildData(ctx.Guild.Id)
-            Return Task.FromResult(data.StaffTitles.ContainsKey(ctx.Member.Id))
+            Dim data As GuildData = ctx.Services.GetService(Of DatabaseService).GetGuildEntry(ctx.Guild.Id).Data
+            Return Task.FromResult(data.TitleHolders.ContainsKey(ctx.Member.Id))
         End Function
 
     End Class

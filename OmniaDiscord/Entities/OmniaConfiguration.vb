@@ -11,6 +11,7 @@ Namespace Entities
         Public ReadOnly Property DiscordReleaseToken As String
 
         ' External Tokens and Keys
+        Public ReadOnly Property DatabasePassword As String
         Public ReadOnly Property LavalinkPasscode As String
         Public ReadOnly Property SoundcloudClientId As String
         Public ReadOnly Property YoutubeApiKey As String
@@ -41,6 +42,7 @@ Namespace Entities
             _RainbowSixApiPasscode = config("r6apipasscode")
             _LavalinkIpAddress = config("lavalinkip")
             _ResourceUrl = config("resourceurl")
+            _DatabasePassword = config("databasepassword")
         End Sub
     End Class
 End Namespace

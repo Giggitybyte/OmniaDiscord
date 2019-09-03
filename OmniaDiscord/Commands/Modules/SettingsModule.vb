@@ -30,7 +30,7 @@ Namespace Commands.Modules
             For Each prop In properites
                 Dim attr = prop.GetCustomAttributes(GetType(GuildSettingAttribute), True).FirstOrDefault
                 If attr Is Nothing Then Continue For
-                Dim value As String = prop.GetValue(GuildSettings)?.ToString
+                Dim value As String = prop.GetValue(DbGuild.Settings)?.ToString
                 If value Is Nothing OrElse value = "0" Then value = "Not Set"
 
                 embed.AddField(attr.DisplayName, $"`{value}`", True)
@@ -40,8 +40,8 @@ Namespace Commands.Modules
         End Function
 
         <Command("set")>
-        <Description("Set the value of a setting using its setting key.")>
-        Public Async Function SettingSetCommand(ctx As CommandContext, settingKey As String, value As String) As Task
+        <Description("Sets the value of a setting. A value of 'null' will reset the specified setting to its default.")>
+        Public Async Function SetSettingCommand(ctx As CommandContext, settingKey As String, value As String) As Task
             Dim setting As PropertyInfo
             Dim settingInfo As GuildSettingAttribute
 
@@ -64,7 +64,7 @@ Namespace Commands.Modules
             End If
 
             Dim userTitle As GuildTitle = 0
-            GuildData.StaffTitles.TryGetValue(ctx.Member.Id, userTitle)
+            DbGuild.Data.TitleHolders.TryGetValue(ctx.Member.Id, userTitle)
             If Not userTitle >= settingInfo.RequiredTitle AndAlso Not ctx.Member.Id = ctx.Guild.Owner.Id Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                     .Color = DiscordColor.Red,
@@ -73,26 +73,26 @@ Namespace Commands.Modules
                 Return
             End If
 
-            Dim newValue As Object
-            If Not settingInfo.ValidSetType.Equals(GetType(String)) Then
+            If settingInfo.ValidSetType.Equals(GetType(String)) Then
+                setting.SetValue(DbGuild.Settings, If(value.ToLower = "null", String.Empty, value))
+                Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
+                Return
+            End If
+
+            Dim newValue = Activator.CreateInstance(settingInfo.ValidSetType)
+            If Not value.ToLower = "null" Then
                 Try
-                    Dim typeObj = Activator.CreateInstance(settingInfo.ValidSetType)
-                    newValue = settingInfo.ValidSetType.InvokeMember("Parse", BindingFlags.InvokeMethod, Type.DefaultBinder, typeObj, {value}) ' Fuck Visual Basic
+                    newValue = settingInfo.ValidSetType.InvokeMember("Parse", BindingFlags.InvokeMethod, Type.DefaultBinder, newValue, {value}) ' Fuck Visual Basic
                 Catch ex As Exception
                     ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
                         .Color = DiscordColor.Red,
                         .Description = $"Invalid value for `{settingInfo.UserSetKey}`.{Environment.NewLine}Expected a `{settingInfo.ValidSetType.Name}` value."
                     }).GetAwaiter.GetResult()
-
                     Return
                 End Try
             End If
 
-            If newValue Is Nothing Then newValue = value
-
-            setting.SetValue(GuildSettings, newValue)
-            UpdateGuildSettings()
-
+            setting.SetValue(DbGuild.Settings, newValue)
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
