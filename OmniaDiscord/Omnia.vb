@@ -14,8 +14,8 @@ Imports Microsoft.Extensions.DependencyInjection
 Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Entities
 Imports OmniaDiscord.Entities.Attributes
-Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
+Imports Utility.CommandLine
 Imports CommandNotFoundException = DSharpPlus.CommandsNext.Exceptions.CommandNotFoundException
 
 Public Module Omnia
@@ -27,24 +27,20 @@ End Module
 
 Public Class Bot
     Private _services As IServiceProvider
-    Public Shared Property Config As OmniaConfiguration
-    Public Shared Property Lavalink
+    Public Shared Property Config As New OmniaConfiguration
+
+    <Argument("r"c, "runmode")>
+    Private Property RunMode As OmniaRunMode = OmniaRunMode.Development
 
     Sub New(args As String())
-        Dim argParser As New FluentCommandLineParser
-        Dim runMode As OmniaRunMode
-
-        argParser.Setup(Of OmniaRunMode)("r"c, "runmode").Callback(Sub(r) runMode = r).SetDefault(OmniaRunMode.Development)
-        argParser.Parse(args)
-
-        Config = New OmniaConfiguration With {.RunMode = runMode}
+        Arguments.Populate()
     End Sub
 
     Public Async Function RunAsync() As Task
         Dim token As String = String.Empty
         Dim logLevel As LogLevel = LogLevel.Debug
 
-        Select Case Config.RunMode
+        Select Case RunMode
             Case OmniaRunMode.Development
                 token = Config.DiscordDevelopmentToken
                 Config.DefaultPrefix = "|"

@@ -22,7 +22,6 @@ Namespace Entities
         ' Miscellaneous
         Public ReadOnly Property LavalinkIpAddress As String
         Public ReadOnly Property ResourceUrl As String
-        Public Property RunMode As OmniaRunMode
 
         Sub New()
             Dim config As New Dictionary(Of String, String)
