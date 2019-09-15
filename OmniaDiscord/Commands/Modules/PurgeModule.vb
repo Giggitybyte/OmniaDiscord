@@ -6,11 +6,11 @@ Imports DSharpPlus.Entities
 Imports OmniaDiscord.Entities.Attributes
 
 Namespace Commands.Modules
-    <Group("prune"), Aliases("purge", "remove")>
-    <Description("Bulk deletes messages. `messageCount` defaults to 100.")>
+    <Group("purge"), Aliases("prune", "remove")>
+    <Description("Bulk deletes messages. The message count defaults to 100.")>
     <RequireBotPermissions(Permissions.ManageMessages Or Permissions.AddReactions)>
     <RequireStaff>
-    Public Class PruneModule
+    Public Class PurgeModule
         Inherits OmniaCommandBase
 
         <GroupCommand>
@@ -22,8 +22,8 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":wastebasket:"))
         End Function
 
-        <Command("usermessages"), Aliases("user", "u")>
-        <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them. `messageCount` defaults to 100.")>
+        <Command("user"), Aliases("u")>
+        <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
         Public Async Function RemoveMessagesFromSpecificUserCommand(ctx As CommandContext, targetUser As String, Optional messageCount As ULong = 100) As Task
             Await ctx.TriggerTypingAsync
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
@@ -52,8 +52,8 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":wastebasket:"))
         End Function
 
-        <Command("botmessages"), Aliases("bots", "b")>
-        <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them. `messageCount` defaults to 100.")>
+        <Command("bots"), Aliases("b")>
+        <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
         Public Async Function RemoveMessagesFromBotsCommand(ctx As CommandContext, Optional messageCount As ULong = 100) As Task
             Dim twoWeeksAgo As Date = Date.Now.AddDays(-14)
             Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, 1000)).ToList
