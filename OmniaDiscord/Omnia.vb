@@ -26,21 +26,19 @@ Public Module Omnia
 End Module
 
 Public Class Bot
+    Public Shared ReadOnly Property Config As New OmniaConfiguration
     Private _services As IServiceProvider
-    Public Shared Property Config As New OmniaConfiguration
-
-    <Argument("r"c, "runmode")>
-    Private Property RunMode As OmniaRunMode = OmniaRunMode.Development
+    Private _runMode As OmniaRunMode = OmniaRunMode.Development
 
     Sub New(args As String())
-        Arguments.Populate()
+        If args.Length = 2 AndAlso args(0) = "-r" Then [Enum].TryParse(GetType(OmniaRunMode), args(1), _runMode)
     End Sub
 
     Public Async Function RunAsync() As Task
         Dim token As String = String.Empty
         Dim logLevel As LogLevel = LogLevel.Debug
 
-        Select Case RunMode
+        Select Case _runMode
             Case OmniaRunMode.Development
                 token = Config.DiscordDevelopmentToken
                 Config.DefaultPrefix = "|"
@@ -73,6 +71,8 @@ Public Class Bot
 
             _services = .BuildServiceProvider
         End With
+
+        Await _services.GetRequiredService(Of LogService).PrintAsync(LogLevel.Info, "Initialization", $"Omnia has been started in {_runMode} mode.")
 
         Dim cmdExtensions = Await discordClient.UseCommandsNextAsync(New CommandsNextConfiguration With {
             .Services = _services,

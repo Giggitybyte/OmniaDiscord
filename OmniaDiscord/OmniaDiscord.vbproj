@@ -39,7 +39,6 @@
     <PackageReference Include="SkiaSharp" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.NativeAssets.Linux" Version="1.68.0" />
     <PackageReference Include="SkiaSharp.Svg" Version="1.60.0" />
-    <PackageReference Include="Utility.CommandLine.Arguments" Version="3.0.1" />
     <PackageReference Include="YoutubeExplode" Version="4.7.9" />
   </ItemGroup>
 
