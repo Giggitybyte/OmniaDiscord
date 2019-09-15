@@ -1,6 +1,6 @@
 ﻿Namespace Entities.Gamestats
     Public Structure SiegeRanks
-        Private Shared _ranks As New List(Of String) From {
+        Private Shared _ranksSeason5 As New List(Of String) From {
             "Unranked",
             "Copper Ⅳ",
             "Copper Ⅲ",
@@ -21,12 +21,39 @@
             "Platinum Ⅲ",
             "Platinum Ⅱ",
             "Platinum Ⅰ",
-            "Diamond",
-            "Top Player"
+            "Diamond"
         }
 
-        Public Shared Function GetNameFromId(rankId As Integer) As String
-            Return _ranks.ElementAt(rankId)
+        Private Shared _ranksSeason15 As New List(Of String) From {
+            "Unranked",
+            "Copper Ⅴ",
+            "Copper Ⅳ",
+            "Copper Ⅲ",
+            "Copper Ⅱ",
+            "Copper Ⅰ",
+            "Bronze Ⅴ",
+            "Bronze Ⅳ",
+            "Bronze Ⅲ",
+            "Bronze Ⅱ",
+            "Bronze Ⅰ",
+            "Silver Ⅴ",
+            "Silver Ⅳ",
+            "Silver Ⅲ",
+            "Silver Ⅱ",
+            "Silver Ⅰ",
+            "Gold Ⅲ",
+            "Gold Ⅱ",
+            "Gold Ⅰ",
+            "Platinum Ⅲ",
+            "Platinum Ⅱ",
+            "Platinum Ⅰ",
+            "Diamond",
+            "Champion"
+        }
+
+        Public Shared Function GetNameFromId(seasonId As Integer, rankId As Integer) As String
+            If seasonId >= 15 Then Return _ranksSeason15(rankId)
+            Return _ranksSeason5.ElementAt(rankId)
         End Function
 
         Public Shared Function GetRankIconUrl(rankId As Integer) As String

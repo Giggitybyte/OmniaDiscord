@@ -29,8 +29,8 @@ Namespace Entities.Media.Soundcloud
         <JsonProperty("errors")>
         Public Property Errors As List(Of String)
 
-        Public Function GetDownloadUrl(scClientId As String) As String
-            Return WebRequest.Create($"{StreamUrl}?client_id={scClientId}").GetResponse.ResponseUri.AbsoluteUri
+        Public Function GetDownloadUrl() As String
+            Return $"{StreamUrl}?client_id={Bot.Config.SoundcloudClientId}"
         End Function
 
     End Class

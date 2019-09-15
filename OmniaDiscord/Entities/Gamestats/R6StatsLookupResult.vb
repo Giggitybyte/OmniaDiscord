@@ -1,7 +1,8 @@
 ﻿Imports Newtonsoft.Json
 
 Namespace Entities.Gamestats
-    Public Class SiegeSearchResult
+    <JsonConverter(GetType(JsonPathConverter))>
+    Public Class R6StatsLookupResult
         <JsonProperty("username")>
         Public Property Username As String
 
@@ -13,5 +14,8 @@ Namespace Entities.Gamestats
 
         <JsonProperty("uplay_id")>
         Public Property UplayId As String
+
+        <JsonProperty("progressionStats.level")>
+        Public Property Level As Integer
     End Class
 End Namespace

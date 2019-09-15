@@ -43,7 +43,9 @@ Namespace Utilities
             Return result.ToString()
         End Function
 
-        ' Downloads an SVG file from a URL, renders it, then returns it as a Stream.
+        ''' <summary>
+        ''' Downloads an SVG file from a URL, renders it, then returns it as a Stream.
+        ''' </summary>
         Public Shared Async Function SvgToStreamAsync(svgUrl As String, Optional width As Integer = 512, Optional height As Integer = 512) As Task(Of Stream)
             Dim svg As SKSvg = New SKSvg
             Dim bitmap As New SKBitmap(width, height)
@@ -88,27 +90,38 @@ Namespace Utilities
             End If
         End Function
 
-        ' Retrieves the source code of a webpage. Intended to download JSON for deserialization.
-        Public Shared Function GetJson(url As String) As String
-            Dim request As HttpWebRequest
-            Dim response As HttpWebResponse = Nothing
-            Dim reader As StreamReader
-            Dim rawjson As String = Nothing
+        Public Shared Function CalcKdr(kills As Integer, deaths As Integer) As String
+            Dim kdr = kills / deaths
+            If Double.IsInfinity(kdr) Then kdr = kills
+            Return kdr.ToStringNoRounding
+        End Function
 
-            request = CType(WebRequest.Create(url), HttpWebRequest)
+        ''' <summary>
+        ''' Retrieves the source code of a webpage. Intended to download JSON for deserialization.
+        ''' </summary>
+        Public Shared Function GetJson(url As String) As (json As String, status As HttpStatusCode)
+            Dim rawjson As String
+            Dim statusCode As HttpStatusCode
+            Dim request = CType(WebRequest.Create(url), HttpWebRequest)
             request.UserAgent = "Mozilla/5.0 (Windows NT 6.2; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/29.0.1547.2 Safari/537.36"
             request.Timeout = 12500
 
             Try
-                response = CType(request.GetResponse(), HttpWebResponse)
-                reader = New StreamReader(response.GetResponseStream())
+                Dim response = CType(request.GetResponse(), HttpWebResponse)
+                Dim reader As New StreamReader(response.GetResponseStream())
+
+                statusCode = response.StatusCode
                 rawjson = reader.ReadToEnd()
                 reader.Close()
             Catch webEx As WebException
-                Return Nothing
+                If webEx.Status = WebExceptionStatus.Timeout Then
+                    statusCode = HttpStatusCode.RequestTimeout
+                Else
+                    statusCode = CType(webEx.Response, HttpWebResponse).StatusCode
+                End If
             End Try
 
-            Return rawjson
+            Return (rawjson, statusCode)
         End Function
 
         Public Shared Async Function GetUserConfirmationAsync(ctx As CommandContext) As Task(Of Boolean)
@@ -119,7 +132,9 @@ Namespace Utilities
             With embed
                 .Color = DiscordColor.Yellow
                 .Title = "Action Confirmation"
-                .Description = $"Please be sure you want to go through with this action.{Environment.NewLine}Respond with the following confirmation code to complete this action.{Environment.NewLine}```{conformationCode}```"
+                .Description = $"Please be sure you want to go through with this action.{Environment.NewLine}"
+                .Description &= $"Respond with the following confirmation code to complete this action.{Environment.NewLine}"
+                .Description &= $"```{conformationCode}```"
             End With
 
             Dim confirmationMessage As DiscordMessage = Await ctx.RespondAsync(embed:=embed.Build)

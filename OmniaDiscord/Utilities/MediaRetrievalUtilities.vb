@@ -266,7 +266,7 @@ Namespace Utilities
         Private Shared Function SoundcloudTrackToMediaInfo(scTrack As SoundcloudTrack) As OmniaMediaInfo
             SoundcloudTrackToMediaInfo = New OmniaMediaInfo With {
                 .Author = scTrack.Uploader.Username,
-                .DirectUrl = scTrack.Url,
+                .DirectUrl = scTrack.GetDownloadUrl(),
                 .Duration = TimeSpan.FromMilliseconds(scTrack.Duration),
                 .Origin = "Soundcloud",
                 .ThumbnailUrl = If(scTrack.ArtworkUrl, $"{Bot.Config.ResourceUrl}/assets/omnia/{ .Origin}.png"),
