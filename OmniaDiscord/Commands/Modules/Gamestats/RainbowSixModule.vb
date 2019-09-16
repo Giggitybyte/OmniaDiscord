@@ -123,8 +123,11 @@ Namespace Commands.Modules.Gamestats
 
                 Dim rankedReq, seasonalReq As (json As String, status As HttpStatusCode)
                 Dim tasks As New List(Of Task) From {
-                    Task.Run(Sub() rankedReq = GeneralUtilities.GetJson($"https://r6stats.com/api/stats/{player.UbisoftId}/seasonal")),
-                    Task.Run(Sub() seasonalReq = GeneralUtilities.GetJson($"https://r6tab.com/api/player.php?p_id={player.UbisoftId}"))
+                    Task.Run(Sub()
+                                 GeneralUtilities.GetJson($"https://r6tab.com/mainpage.php?page={player.UbisoftId}&updatenow=true")
+                                 seasonalReq = GeneralUtilities.GetJson($"https://r6tab.com/api/player.php?p_id={player.UbisoftId}")
+                             End Sub),
+                    Task.Run(Sub() rankedReq = GeneralUtilities.GetJson($"https://r6stats.com/api/stats/{player.UbisoftId}/seasonal"))
                 }
                 Task.WaitAll(tasks.ToArray)
 
