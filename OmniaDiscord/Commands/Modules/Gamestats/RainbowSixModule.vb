@@ -98,7 +98,7 @@ Namespace Commands.Modules.Gamestats
                     regionRankings.Add(rankedData.Rank)
                 Next
                 embed.AddField("Current Rankings", strBuilder.ToString)
-                embed.ThumbnailUrl = $"https://r6tab.com/images/pngranks/{regionRankings.OrderByDescending(Function(i) i).First}.png"
+                embed.ThumbnailUrl = SiegeRanks.GetRankIconUrl(currentSeason.Id, regionRankings.OrderByDescending(Function(i) i).First)
                 strBuilder.Clear()
 
                 Await ctx.RespondAsync(embed:=embed.Build)
@@ -175,7 +175,7 @@ Namespace Commands.Modules.Gamestats
                 embed.AddField($"Past Seasons Top Ranks", strBuilder.ToString)
                 strBuilder.Clear()
 
-                embed.ThumbnailUrl = $"https://r6tab.com/images/pngranks/{stats.Rank}.png"
+                embed.ThumbnailUrl = SiegeRanks.GetRankIconUrl(currentSeason.Id, stats.Rank)
 
                 Await ctx.RespondAsync(embed:=embed.Build)
             End Function
