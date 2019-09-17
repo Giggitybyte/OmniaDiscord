@@ -11,15 +11,13 @@ Namespace Commands.Modules
     ' TODO: Verify and compact logic for this module.
 
     <Group("titles"), RequireGuild>
-    <Description("Display and manage titles for this server.")>
+    <Description("Displays titles for this server." + vbCrLf + "Child commands allow for management of titles.")>
     <RequireBotPermissions(Permissions.SendMessages Or Permissions.EmbedLinks)>
     Public Class TitleModule
         Inherits OmniaCommandBase
 
         <GroupCommand>
         Public Async Function DisplayTitles(ctx As CommandContext) As Task
-            Await ctx.TriggerTypingAsync()
-
             Dim embed As New DiscordEmbedBuilder With {
                     .Title = "Staff Title List",
                     .Color = DiscordColor.CornflowerBlue
@@ -34,7 +32,7 @@ Namespace Commands.Modules
                     users.Add(user.Mention)
                 Next
 
-                embed.AddField(title.ToString, If(users.Any, String.Join(", ", users), "None."), True)
+                If users.Any Then embed.AddField(title.ToString, String.Join(", ", users), True)
             Next
 
             Await ctx.RespondAsync(embed:=embed.Build())
@@ -90,7 +88,7 @@ Namespace Commands.Modules
         End Function
 
         <Command("strip"), RequireStaff>
-        <Description("Removes the current title of a user.")>
+        <Description("Removes a users current title.")>
         Public Async Function RemoveTitle(ctx As CommandContext, user As DiscordMember) As Task
             Await ctx.TriggerTypingAsync()
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red, .Title = "Couldn't Remove Title"}

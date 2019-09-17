@@ -23,7 +23,7 @@ Namespace Commands.Modules
         End Function
 
         <Command("user"), Aliases("u")>
-        <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
+        <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them." + vbCrLf + "The message count defaults to 100.")>
         Public Async Function RemoveMessagesFromSpecificUserCommand(ctx As CommandContext, targetUser As String, Optional messageCount As ULong = 100) As Task
             Await ctx.TriggerTypingAsync
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
@@ -53,7 +53,7 @@ Namespace Commands.Modules
         End Function
 
         <Command("bots"), Aliases("b")>
-        <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
+        <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them." + vbCrLf + "The message count defaults to 100.")>
         Public Async Function RemoveMessagesFromBotsCommand(ctx As CommandContext, Optional messageCount As ULong = 100) As Task
             Dim twoWeeksAgo As Date = Date.Now.AddDays(-14)
             Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, 1000)).ToList

@@ -2,12 +2,10 @@
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
-Imports OmniaDiscord.Entities.Database
 
 Namespace Commands.Modules
-
     <Group("lobby")>
-    <Description("Displays all lobby channels. Subcommands for this command allow for the addition and removal of lobby channels.")>
+    <Description("Displays all lobby channels. Child commands allow for the addition and removal of lobby channels.")>
     Public Class LobbySystemModule
         Inherits OmniaCommandBase
 
