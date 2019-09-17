@@ -70,14 +70,14 @@ Namespace Commands.Modules
                 .Color = DiscordColor.Orange,
                 .Footer = New EmbedFooter With {
                     .Text = "Select voice channel you'd like below",
-                    .IconUrl = "https://i.imgur.com/ZHrFe49.png"
+                    .IconUrl = $"{Bot.Config.ResourceUrl}/assets/omnia/ArrowDownOrange.png"
                 }
             }
 
             channels = channels.Take(4).ToList
 
             For index As Integer = 0 To channels.Count - 1
-                embed.Description &= $"**`{index + 1}`** {channels(index).Name} ({channels(index).Id}){Environment.NewLine}"
+                embed.Description &= $"{emojis(index)} {channels(index).Name} ({channels(index).Id}){Environment.NewLine}"
             Next
 
             Dim message = Await ctx.RespondAsync(embed:=embed.Build)
@@ -87,7 +87,7 @@ Namespace Commands.Modules
 
             Dim interactivity = ctx.Client.GetInteractivity()
             Dim reactionContext = Await interactivity.WaitForReactionAsync(Function(e)
-                                                                               If e.User = ctx.User Then Return emojis.Contains(e.Emoji)
+                                                                               If e.User.Id = ctx.User.Id Then Return emojis.Contains(e.Emoji)
                                                                                Return False
                                                                            End Function,
                                                                            TimeSpan.FromSeconds(15))

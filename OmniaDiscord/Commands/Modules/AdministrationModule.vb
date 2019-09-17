@@ -96,6 +96,7 @@ Namespace Commands.Modules
 
             If DbGuild.Data.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(DbGuild.Data.MutedRoleId) Then
                 Dim message = Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Orange, .Description = "Configuring muted role..."})
+                Await ctx.TriggerTypingAsync
                 role = Await _adminService.CreateGuildMutedRoleAsync(ctx.Guild)
                 Await message.DeleteAsync
             End If

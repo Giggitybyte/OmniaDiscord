@@ -2,6 +2,8 @@
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Entities.Attributes
+Imports OmniaDiscord.Entities.Database
 
 Namespace Commands.Modules
     <Group("lobby")>
@@ -28,6 +30,7 @@ Namespace Commands.Modules
 
         <Command("add")>
         <Description("Adds a channel to the lobby channel list.")>
+        <RequireTitle(GuildTitle.Moderator)>
         Public Async Function AddLobbyCommand(ctx As CommandContext, channel As DiscordChannel) As Task
             If Not channel.Type = ChannelType.Voice Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
@@ -51,6 +54,7 @@ Namespace Commands.Modules
 
         <Command("remove")>
         <Description("Removes a channel from the lobby channel list.")>
+        <RequireTitle(GuildTitle.Moderator)>
         Public Async Function RemoveLobbyCommand(ctx As CommandContext, channel As DiscordChannel) As Task
             If Not DbGuild.Data.LobbyChannels.Contains(channel.Id) Then
                 Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
