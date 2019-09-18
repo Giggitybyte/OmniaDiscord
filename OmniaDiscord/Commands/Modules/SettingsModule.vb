@@ -9,7 +9,7 @@ Imports OmniaDiscord.Entities.Database
 Namespace Commands.Modules
 
     <Group("settings"), RequireGuild>
-    <Description("Displays settings for this server. Subcommands allow for modification of settings.")>
+    <Description("Displays settings for this server. " + vbCrLf + " Child commands allow for modification of settings.")>
     <RequireBotPermissions(Permissions.EmbedLinks)>
     Public Class SettingsModule
         Inherits OmniaCommandBase

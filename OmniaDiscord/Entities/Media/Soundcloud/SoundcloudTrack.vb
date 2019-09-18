@@ -1,5 +1,4 @@
-﻿Imports System.Net
-Imports Newtonsoft.Json
+﻿Imports Newtonsoft.Json
 
 Namespace Entities.Media.Soundcloud
 

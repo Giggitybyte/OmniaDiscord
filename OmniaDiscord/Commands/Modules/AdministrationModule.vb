@@ -17,8 +17,8 @@ Namespace Commands.Modules
             _adminService = adminService
         End Sub
 
-        <Command("warn"), RequireStaff>
-        <Description("Gives a user a warning. An acculative total of 3 warnings will have a user kicked.")>
+        <Command("warn"), RequireGuild, RequireStaff>
+        <Description("Gives a user a warning." + vbCrLf + " An acculative total of 3 warnings will have a user kicked.")>
         <RequireBotPermissions(Permissions.KickMembers Or Permissions.BanMembers Or Permissions.EmbedLinks)>
         <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function WarnCommand(ctx As CommandContext, user As DiscordMember) As Task
@@ -47,7 +47,7 @@ Namespace Commands.Modules
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
 
-        <Command("warnings")>
+        <Command("warnings"), RequireGuild>
         <Description("Displays the number of warnings a user has.")>
         <RequireBotPermissions(Permissions.EmbedLinks)>
         Public Async Function WarningsCommand(ctx As CommandContext, Optional user As DiscordMember = Nothing) As Task
@@ -58,7 +58,7 @@ Namespace Commands.Modules
             })
         End Function
 
-        <Command("forgive"), RequireStaff>
+        <Command("forgive"), RequireGuild, RequireStaff>
         <Description("Removes a warning from a user.")>
         <Cooldown(1, 5, CooldownBucketType.User)>
         Public Async Function ForgiveCommand(ctx As CommandContext, user As DiscordMember) As Task
@@ -87,8 +87,8 @@ Namespace Commands.Modules
             If DbGuild.Data.MemberWarnings(user.Id) = 0 Then DbGuild.Data.MemberWarnings.Remove(user.Id)
         End Function
 
-        <Command("mute")>
-        <Description("Prevents the specified user from typing in text channels and speaking in voice channels.")>
+        <Command("mute"), RequireGuild>
+        <Description("Prevents the specified user from typing in text channels and speaking in voice channels." + vbCrLf + "A mute will persist until the user is explicity unmuted.")>
         <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.ManageChannels Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Helper)>
         Public Async Function MuteCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
@@ -96,6 +96,7 @@ Namespace Commands.Modules
 
             If DbGuild.Data.MutedRoleId = 0 OrElse Not ctx.Guild.Roles.ContainsKey(DbGuild.Data.MutedRoleId) Then
                 Dim message = Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {.Color = DiscordColor.Orange, .Description = "Configuring muted role..."})
+                Await ctx.TriggerTypingAsync
                 role = Await _adminService.CreateGuildMutedRoleAsync(ctx.Guild)
                 Await message.DeleteAsync
             End If
@@ -122,7 +123,7 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
-        <Command("unmute")>
+        <Command("unmute"), RequireGuild>
         <Description("Allows a previously muted user to speak and send messages.")>
         <RequireBotPermissions(Permissions.MuteMembers Or Permissions.ManageRoles Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Helper)>
@@ -141,19 +142,13 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
-        <Command("kick")>
-        <Description("Kicks a user from the server.")>
+        <Command("kick"), RequireGuild>
+        <Description("Kicks a user from the server with an optional reason.")>
         <RequireBotPermissions(Permissions.KickMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function KickCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
-            If Not IsOmniaRolePositionHigher(ctx, user) Then
-                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
-                   .Color = DiscordColor.Red,
-                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot kick them."
-                })
-                Return
-            End If
+            If Not Await RolePositionCheckAsync(ctx, user, "kick") Then Return
 
             Dim logReason = $"kicked by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -162,20 +157,13 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
-        <Command("ban")>
-        <Description("Bans a user from this server. Users who are not currently in this server can still be banned if their user ID is provided.")>
+        <Command("ban"), RequireGuild>
+        <Description("Bans a user from this server with an optional reason." + vbCrLf + " Users who are not currently in this server can still be banned if their user ID is provided.")>
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Admin)>
         Public Async Function BanCommand(ctx As CommandContext, user As DiscordUser, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
-
-            If ctx.Guild.Members.ContainsKey(user.Id) AndAlso Not IsOmniaRolePositionHigher(ctx, ctx.Guild.Members(user.Id)) Then
-                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
-                   .Color = DiscordColor.Red,
-                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot ban them."
-                })
-                Return
-            End If
+            If ctx.Guild.Members.ContainsKey(user.Id) AndAlso Not Await RolePositionCheckAsync(ctx, ctx.Guild.Members(user.Id), "ban") Then Return
 
             Dim logReason = $"banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -185,20 +173,13 @@ Namespace Commands.Modules
         End Function
 
 #Disable Warning BC42358
-        <Command("softban"), Aliases("sban")>
+        <Command("softban"), RequireGuild, Aliases("sban")>
         <Description("Bans then unbans a user after five minutes.")>
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Moderator)>
         Public Async Function SoftBanCommand(ctx As CommandContext, user As DiscordMember, <RemainingText> Optional reason As String = "") As Task
             If user.Id = ctx.Member.Id Or user.Id = ctx.Guild.CurrentMember.Id Then Return
-
-            If Not IsOmniaRolePositionHigher(ctx, user) Then
-                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
-                   .Color = DiscordColor.Red,
-                   .Description = $"The highest role that {user.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot softban them."
-                })
-                Return
-            End If
+            If Not Await RolePositionCheckAsync(ctx, user, "softban") Then Return
 
             Dim logReason = $"soft banned by {ctx.Member.Username}#{ctx.Member.Discriminator} ({ctx.Member.Id}). Reason: "
             logReason &= If(String.IsNullOrWhiteSpace(reason), "none provided", New String(reason.Take(512 - logReason.Count).ToArray))
@@ -212,7 +193,7 @@ Namespace Commands.Modules
         End Function
 #Enable Warning BC42358
 
-        <Command("unban")>
+        <Command("unban"), RequireGuild>
         <Description("Removes a ban from a previously banned user.")>
         <RequireBotPermissions(Permissions.BanMembers Or Permissions.AddReactions)>
         <RequireTitle(GuildTitle.Admin)>
@@ -231,11 +212,20 @@ Namespace Commands.Modules
             Await ctx.Message.CreateReactionAsync(DiscordEmoji.FromName(ctx.Client, ":ok_hand:"))
         End Function
 
-        Private Function IsOmniaRolePositionHigher(ctx As CommandContext, member As DiscordMember) As Boolean
+        Private Async Function RolePositionCheckAsync(ctx As CommandContext, member As DiscordMember, action As String) As Task(Of Boolean)
             If ctx.Guild.CurrentMember.Roles.Any(Function(r) r.CheckPermission(Permissions.Administrator)) Then Return True
             Dim omniaHighest = ctx.Guild.CurrentMember.Roles.OrderByDescending(Function(r) r.Position).FirstOrDefault
             Dim memberHighest = member.Roles.OrderByDescending(Function(r) r.Position).FirstOrDefault
-            Return omniaHighest?.Position > memberHighest?.Position
+            Dim result = omniaHighest?.Position > memberHighest?.Position
+
+            If Not result Then
+                Await ctx.RespondAsync(embed:=New DiscordEmbedBuilder With {
+                   .Color = DiscordColor.Red,
+                   .Description = $"The highest role that {member.Mention} has is higher than my highest role.{Environment.NewLine}As a result, I cannot {action} them."
+                })
+            End If
+
+            Return result
         End Function
     End Class
 End Namespace

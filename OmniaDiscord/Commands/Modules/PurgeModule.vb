@@ -7,7 +7,7 @@ Imports OmniaDiscord.Entities.Attributes
 
 Namespace Commands.Modules
     <Group("purge"), Aliases("prune", "remove")>
-    <Description("Bulk deletes messages. The message count defaults to 100.")>
+    <Description("Retrieves messages sent within the last two weeks and bulk delete them." + vbCrLf + "Message count defaults to 100.")>
     <RequireBotPermissions(Permissions.ManageMessages Or Permissions.AddReactions)>
     <RequireStaff>
     Public Class PurgeModule
@@ -23,7 +23,7 @@ Namespace Commands.Modules
         End Function
 
         <Command("user"), Aliases("u")>
-        <Description("Gets messages from the specified user in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
+        <Description("Retrieves messages sent from the specified user in the last two weeks and bulk deletes them." + vbCrLf + "Message count defaults to 100.")>
         Public Async Function RemoveMessagesFromSpecificUserCommand(ctx As CommandContext, targetUser As String, Optional messageCount As ULong = 100) As Task
             Await ctx.TriggerTypingAsync
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.Red}
@@ -38,7 +38,7 @@ Namespace Commands.Modules
             End If
 
             Dim twoWeeksAgo As Date = Date.Now.AddDays(-14)
-            Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, 1000)).ToList
+            Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, messageCount)).ToList
             messages.RemoveAll(Function(m) Not m.Author.Id = user.Id And m.CreationTimestamp > twoWeeksAgo)
 
             If messages.Count = 0 Then
@@ -53,10 +53,10 @@ Namespace Commands.Modules
         End Function
 
         <Command("bots"), Aliases("b")>
-        <Description("Gets all messages from bots in the last 1,000 messages and bulk deletes them. The message count defaults to 100.")>
+        <Description("Retrieves all messages sent from bots in the last two weeks and bulk deletes them." + vbCrLf + "Message count defaults to 100.")>
         Public Async Function RemoveMessagesFromBotsCommand(ctx As CommandContext, Optional messageCount As ULong = 100) As Task
             Dim twoWeeksAgo As Date = Date.Now.AddDays(-14)
-            Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, 1000)).ToList
+            Dim messages As List(Of DiscordMessage) = (Await ctx.Channel.GetMessagesBeforeAsync(ctx.Message.Id, messageCount)).ToList
             messages.RemoveAll(Function(m) Not m.Author.IsBot)
             messages.RemoveAll(Function(m) m.CreationTimestamp < twoWeeksAgo)
 

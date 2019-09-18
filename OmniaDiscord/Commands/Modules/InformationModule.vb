@@ -7,9 +7,8 @@ Imports Humanizer
 Imports Humanizer.Localisation
 
 Namespace Commands.Modules
-
     <Group("info"), Aliases("i"), RequireGuild>
-    <Description("Command group that displays information about various Discord related things.")>
+    <Description("Displays various discord related information.")>
     <RequireBotPermissions(Permissions.EmbedLinks)>
     Public Class InformationModule
         Inherits BaseCommandModule
@@ -49,12 +48,12 @@ Namespace Commands.Modules
                 .Color = DiscordColor.CornflowerBlue
 
                 .AddField("Owner", ctx.Guild.Owner.Mention, True)
-                .AddField("User Count", ctx.Guild.MemberCount.ToString("N0"), True)
-                .AddField("Voice Region", ctx.Guild.VoiceRegion.Name, True)
-                .AddField("Discord ID", ctx.Guild.Id, True)
-                .AddField("Omnia Shard", ctx.Client.ShardId, True)
-                .AddField("AFK Timer", $"{TimeSpan.FromSeconds(ctx.Guild.AfkTimeout).TotalMinutes} minutes", True)
-                .AddField("Creation Date", $"{ctx.Guild.CreationTimestamp.ToString("g")} ({ctx.Guild.CreationTimestamp.ToLocalTime.Humanize})")
+                .AddField("Discord ID", Formatter.InlineCode(ctx.Guild.Id), True)
+                .AddField("Voice Region", Formatter.InlineCode(ctx.Guild.VoiceRegion.Name), True)
+                .AddField("Omnia Shard", Formatter.InlineCode(ctx.Client.ShardId), True)
+                .AddField("User Count", Formatter.InlineCode(ctx.Guild.Members.Where(Function(m) Not m.Value.IsBot).Count), True)
+                .AddField("Bot Count", Formatter.InlineCode(ctx.Guild.Members.Where(Function(m) m.Value.IsBot).Count), True)
+                .AddField("Creation Date", $"`{ctx.Guild.CreationTimestamp.ToString("g")} ({ctx.Guild.CreationTimestamp.ToLocalTime.Humanize})`")
 
                 .WithAuthor(ctx.Guild.Name, iconUrl:=ctx.Guild.IconUrl)
             End With
@@ -79,7 +78,5 @@ Namespace Commands.Modules
 
             Await ctx.RespondAsync(embed:=embed.Build)
         End Function
-
     End Class
-
 End Namespace
