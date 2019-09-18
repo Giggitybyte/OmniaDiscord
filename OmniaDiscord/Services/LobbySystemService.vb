@@ -13,7 +13,7 @@ Namespace Services
         Private ReadOnly _generatedChannels As New ConcurrentDictionary(Of ULong, ULong) ' generated channel, lobby channel.
         Private ReadOnly _allowedUsers As New ConcurrentDictionary(Of ULong, List(Of ULong)) ' generated channel, allowed users.
 
-        Sub New(client As DiscordShardedClient, db As DatabaseService)
+        Sub New(client As DiscordClient, db As DatabaseService)
             _db = db
 
             AddHandler client.VoiceStateUpdated, AddressOf LobbySystemManager

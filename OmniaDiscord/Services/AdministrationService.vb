@@ -9,7 +9,7 @@ Namespace Services
         Public ReadOnly Property SoftbanTokens As New ConcurrentDictionary(Of ULong, CancellationTokenSource)
         Private ReadOnly _db As DatabaseService
 
-        Sub New(client As DiscordShardedClient, db As DatabaseService)
+        Sub New(client As DiscordClient, db As DatabaseService)
             _db = db
 
             AddHandler client.GuildMemberAdded, AddressOf MemberJoinHandler

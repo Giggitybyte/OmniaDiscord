@@ -2,6 +2,7 @@
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Commands.Bases
 Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 
@@ -10,7 +11,7 @@ Namespace Commands.Modules
     <Description("Displays titles for this server." + vbCrLf + "Child commands allow for management of titles.")>
     <RequireBotPermissions(Permissions.SendMessages Or Permissions.EmbedLinks)>
     Public Class TitleModule
-        Inherits OmniaCommandBase
+        Inherits OmniaDbCommandBase
 
         <GroupCommand>
         Public Async Function DisplayTitles(ctx As CommandContext) As Task

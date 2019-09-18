@@ -3,13 +3,14 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Commands.Bases
 Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 Imports OmniaDiscord.Services
 
 Namespace Commands.Modules
     Public Class AdministrationModule
-        Inherits OmniaCommandBase
+        Inherits OmniaDbCommandBase
 
         Private _adminService As AdministrationService
 

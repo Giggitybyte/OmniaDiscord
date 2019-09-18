@@ -6,7 +6,7 @@ Namespace Services
     Public Class DatabaseService
         Private _db As LiteDatabase
 
-        Sub New(logger As LogService)
+        Sub New(logger As DiscordLogService)
             _db = New LiteDatabase($"filename=Omnia.db;password={Bot.Config.DatabasePassword}")
             _db.GetCollection(Of GuildEntry)("guilds").EnsureIndex(Function(e) e.GuildId)
             _db.GetCollection(Of UserEntry)("users").EnsureIndex(Function(e) e.UserId)

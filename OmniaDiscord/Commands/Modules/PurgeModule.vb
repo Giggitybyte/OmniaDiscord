@@ -3,6 +3,7 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.CommandsNext.Converters
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Commands.Bases
 Imports OmniaDiscord.Entities.Attributes
 
 Namespace Commands.Modules
@@ -11,7 +12,7 @@ Namespace Commands.Modules
     <RequireBotPermissions(Permissions.ManageMessages Or Permissions.AddReactions)>
     <RequireStaff>
     Public Class PurgeModule
-        Inherits OmniaCommandBase
+        Inherits OmniaDbCommandBase
 
         <GroupCommand>
         Public Async Function PruneCommand(ctx As CommandContext, Optional messageCount As ULong = 100) As Task

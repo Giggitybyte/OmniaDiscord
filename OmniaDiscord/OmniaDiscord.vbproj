@@ -28,11 +28,13 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00624" />
-    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00624" />
-    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00624" />
-    <PackageReference Include="DSharpPlus.Lavalink" Version="4.0.0-nightly-00624" />
+    <PackageReference Include="DSharpPlus" Version="4.0.0-nightly-00625" />
+    <PackageReference Include="DSharpPlus.CommandsNext" Version="4.0.0-nightly-00625" />
+    <PackageReference Include="DSharpPlus.Interactivity" Version="4.0.0-nightly-00625" />
     <PackageReference Include="Humanizer.Core" Version="2.7.2" />
+    <PackageReference Include="Lavalink4NET" Version="1.4.5" />
+    <PackageReference Include="Lavalink4NET.DSharpPlus" Version="1.4.5" />
+    <PackageReference Include="Lavalink4NET.MemoryCache" Version="1.4.5" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Myrmec" Version="1.2.0" />
     <PackageReference Include="Overstarch" Version="2.1.0-beta-29" />

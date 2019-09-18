@@ -4,79 +4,14 @@ Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
-Imports DSharpPlus.Lavalink
-Imports Humanizer
-Imports Humanizer.Localisation
+Imports Lavalink4NET.Player
 Imports Myrmec
 Imports OmniaDiscord.Entities.Media
-Imports OmniaDiscord.Services
 
 Namespace Utilities
     Public Class MediaPlaybackUtilities
-        ' TODO: clean this function up.
-        Public Shared Async Function AddMediaToQueueAsync(ctx As CommandContext, lavalink As LavalinkService, media As OmniaMediaInfo) As Task(Of DiscordEmbedBuilder)
-            Dim embed As New DiscordEmbedBuilder
-
-            If media Is Nothing Then
-                With embed
-                    .Color = DiscordColor.Red
-                    .Title = "Cannot Retrieve Media"
-                    .Description = "The provided URL was either from an unsupported platform or is inaccessible for me."
-                End With
-
-            Else ' Build embed, join voice channel, queue and play media.
-                With embed
-                    .Color = DiscordColor.SpringGreen
-                    .Footer = New DiscordEmbedBuilder.EmbedFooter With {
-                        .Text = media.Origin
-                    }
-                End With
-
-                Dim guildConnection As LavalinkGuildConnection = Await lavalink.Node.ConnectAsync(ctx.Member.VoiceState.Channel)
-
-                If media.Type = OmniaMediaType.Track Then
-                    media.Requester = ctx.Member.Id
-                    lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(media)
-
-                    With embed
-                        .Title = "Queued Track"
-                        .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}{media.Author}"
-                        .ThumbnailUrl = media.ThumbnailUrl
-
-                        If media.Duration.TotalSeconds > 0 Then .Description &= $"{Environment.NewLine}*{media.Duration.Humanize(2, maxUnit:=TimeUnit.Hour)}*"
-                    End With
-
-                ElseIf media.Type = OmniaMediaType.Album Or media.Type = OmniaMediaType.Playlist Then
-                    For Each track As OmniaMediaInfo In media.Tracks
-                        track.Requester = ctx.Member.Id
-                        lavalink.GuildInfo(ctx.Guild.Id).MediaQueue.Enqueue(track)
-                    Next
-
-                    With embed
-                        .Title = $"Queued {media.Tracks.Count} Tracks"
-
-                        .Description = $"**[{media.Title}]({media.Url})**{Environment.NewLine}"
-                        .Description &= $"{media.Author}{Environment.NewLine}{Environment.NewLine}"
-                        .Description &= $"Total Playtime: {media.Duration.Humanize(2, maxUnit:=TimeUnit.Hour)}"
-
-                        .ThumbnailUrl = media.ThumbnailUrl
-                        .Footer.Text &= $" {media.Type}"
-                    End With
-                End If
-
-                If guildConnection IsNot Nothing AndAlso guildConnection.IsConnected Then
-                    If lavalink.GuildInfo(ctx.Guild.Id).CurrentTrack Is Nothing Then
-                        ' TODO: Make this less fucky and log all tracks that fucked up.
-                        Dim isSuccess As Boolean
-
-                        Do
-                            isSuccess = Await lavalink.PlayNextTrackAsync(ctx.Guild)
-                        Loop Until isSuccess
-                    End If
-                End If
-            End If
-
-            Return embed
+        Public Shared Function AddMediaToQueue(ctx As CommandContext, player As LavalinkPlayer, media As OmniaMediaInfo) As DiscordEmbedBuilder
+            Throw New NotImplementedException
         End Function
 
         Public Shared Async Function DoStringPaginationAsync(ctx As CommandContext, pages As List(Of String), timeout As Integer) As Task

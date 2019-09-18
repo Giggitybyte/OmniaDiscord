@@ -7,14 +7,19 @@ Imports DSharpPlus.CommandsNext.Exceptions
 Imports DSharpPlus.Entities
 Imports DSharpPlus.EventArgs
 Imports DSharpPlus.Interactivity
-Imports DSharpPlus.Lavalink
 Imports Humanizer
+Imports Lavalink4NET
+Imports Lavalink4NET.DSharpPlus
+Imports Lavalink4NET.Logging
+Imports Lavalink4NET.MemoryCache
+Imports Lavalink4NET.Tracking
 Imports Microsoft.Extensions.DependencyInjection
 Imports OmniaDiscord.Commands
 Imports OmniaDiscord.Entities
 Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Services
 Imports CommandNotFoundException = DSharpPlus.CommandsNext.Exceptions.CommandNotFoundException
+Imports LogLevel = DSharpPlus.LogLevel
 
 Public Module Omnia
     Sub Main(args As String())
@@ -34,7 +39,7 @@ Public Class Bot
 
     Public Async Function RunAsync() As Task
         Dim token As String = String.Empty
-        Dim logLevel As LogLevel = LogLevel.Debug
+        Dim logLevel As LogLevel = logLevel.Debug
 
         Select Case _runMode
             Case OmniaRunMode.Development
@@ -46,54 +51,67 @@ Public Class Bot
             Case OmniaRunMode.Release
                 token = Config.DiscordReleaseToken
                 Config.DefaultPrefix = ">"
-                logLevel = LogLevel.Info
+                logLevel = logLevel.Info
         End Select
 
-        Dim discordClient As New DiscordShardedClient(New DiscordConfiguration With {
-            .Token = token,
-            .TokenType = TokenType.Bot,
-            .LogLevel = logLevel,
-            .MessageCacheSize = 2048
-        })
-
-        Await discordClient.UseLavalinkAsync()
-        Await discordClient.UseInteractivityAsync(New InteractivityConfiguration)
-
         With New ServiceCollection
-            .AddSingleton(discordClient)
-            .AddSingleton(Of LogService)
+            .AddSingleton(Of DiscordClient)
+            .AddSingleton(Of IDiscordClientWrapper, DiscordClientWrapper)
+            .AddSingleton(Of IAudioService, LavalinkNode)
+            .AddSingleton(Of ILavalinkCache, LavalinkCache)
+            .AddSingleton(Of ILogger, LavalinkLogService)
+            .AddSingleton(Of InactivityTrackingService)
+
+            .AddSingleton(New DiscordConfiguration With {
+                .Token = token,
+                .LogLevel = logLevel,
+                .MessageCacheSize = 2048
+            })
+
+            .AddSingleton(New LavalinkNodeOptions With {
+                .WebSocketUri = $"ws://{Config.LavalinkIpAddress}:2333",
+                .RestUri = $"http://{Config.LavalinkIpAddress}:2333",
+                .Password = Config.LavalinkPasscode,
+                .CacheTime = TimeSpan.FromHours(1),
+                .DisconnectOnStop = False
+            })
+
+            .AddSingleton(New InactivityTrackingOptions With {
+                .PollInterval = TimeSpan.FromSeconds(15),
+                .DisconnectDelay = TimeSpan.FromSeconds(15)
+            })
+
+            .AddSingleton(Of DiscordLogService)
             .AddSingleton(Of AdministrationService)
             .AddSingleton(Of DatabaseService)
-            .AddSingleton(Of LavalinkService)
             .AddSingleton(Of LobbySystemService)
 
             _services = .BuildServiceProvider
         End With
 
-        Await _services.GetRequiredService(Of LogService).PrintAsync(LogLevel.Info, "Initialization", $"Omnia has been started in {_runMode} mode.")
+        Dim logger As DiscordLogService = _services.GetRequiredService(Of DiscordLogService)
+        Dim client = _services.GetRequiredService(Of DiscordClient)
 
-        Dim cmdExtensions = Await discordClient.UseCommandsNextAsync(New CommandsNextConfiguration With {
+        Await logger.PrintAsync(logLevel.Info, "Initialization", $"Omnia has been started in {_runMode} mode.")
+        client.UseInteractivity(New InteractivityConfiguration)
+
+        Dim cmdExtension = client.UseCommandsNext(New CommandsNextConfiguration With {
             .Services = _services,
             .PrefixResolver = AddressOf PrefixResolver
         })
 
-        Dim client As DiscordShardedClient = _services.GetRequiredService(Of DiscordShardedClient)
-        Dim logger As LogService = _services.GetRequiredService(Of LogService)
+        cmdExtension.RegisterCommands(Assembly.GetExecutingAssembly)
+        cmdExtension.SetHelpFormatter(Of HelpFormatter)()
 
-        For shard As Integer = 0 To cmdExtensions.Count - 1
-            cmdExtensions(shard).RegisterCommands(Assembly.GetExecutingAssembly)
-            cmdExtensions(shard).SetHelpFormatter(Of HelpFormatter)()
-
-            AddHandler cmdExtensions(shard).CommandErrored, Function(arg) CommandErroredHandler(arg, logger)
-            AddHandler cmdExtensions(shard).CommandExecuted, Function(arg) CommandExecutedHandler(arg, logger)
-        Next
+        AddHandler cmdExtension.CommandErrored, Function(arg) CommandErroredHandler(arg, logger)
+        AddHandler cmdExtension.CommandExecuted, Function(arg) CommandExecutedHandler(arg, logger)
 
         AddHandler client.DebugLogger.LogMessageReceived, Async Sub(sender, arg) Await logger.PrintAsync(arg.Level, arg.Application, arg.Message)
         AddHandler client.GuildCreated, AddressOf GuildCreatedHandler
         AddHandler client.ClientErrored, Function(arg) ClientErroredHandler(arg, logger)
         AddHandler client.Ready, AddressOf ClientReadyHandler
 
-        Await client.StartAsync
+        Await client.ConnectAsync()
         Await Task.Delay(-1)
     End Function
 
@@ -107,7 +125,7 @@ Public Class Bot
             Return Await Task.FromResult(msg.GetStringPrefixLength(Config.DefaultPrefix))
         End If
 
-        Dim discord = _services.GetRequiredService(Of DiscordShardedClient)
+        Dim discord = _services.GetRequiredService(Of DiscordClient)
         If msg.GetMentionPrefixLength(discord.CurrentUser) <> -1 Then
             Return Await Task.FromResult(msg.GetMentionPrefixLength(discord.CurrentUser))
         End If
@@ -121,23 +139,26 @@ Public Class Bot
         Return Task.CompletedTask
     End Function
 
-    Private Function ClientErroredHandler(arg As ClientErrorEventArgs, logger As LogService) As Task
+    Private Function ClientErroredHandler(arg As ClientErrorEventArgs, logger As DiscordLogService) As Task
         Dim ex As Exception = arg.Exception.InnerException
         Return logger.PrintAsync(LogLevel.Error, arg.EventName, $"'{ex.Message}':{Environment.NewLine}{ex.StackTrace}")
     End Function
 
-    Private Function ClientReadyHandler(arg As ReadyEventArgs) As Task
-        Dim client = _services.GetRequiredService(Of DiscordShardedClient)
-        Dim lavalink = _services.GetRequiredService(Of LavalinkService)
-
+    Private Async Function ClientReadyHandler(arg As ReadyEventArgs) As Task
+        ' Calling these services to initialize them.
         _services.GetRequiredService(Of LobbySystemService)
         _services.GetRequiredService(Of AdministrationService)
-        lavalink.InitLavalinkNode(client.ShardClients(0))
 
-        Return Task.CompletedTask
+        ' Setup Lavalink
+        Dim lavalink As LavalinkNode = _services.GetRequiredService(Of IAudioService)
+        Await lavalink.InitializeAsync
+
+        Dim tracking = _services.GetRequiredService(Of InactivityTrackingService)
+        tracking.AddTracker(DefaultInactivityTrackers.UsersInactivityTracker)
+        tracking.BeginTracking()
     End Function
 
-    Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
+    Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As DiscordLogService) As Task
         If arg.Command Is Nothing Or TypeOf arg.Exception Is CommandNotFoundException Or
             arg.Exception.Message.Contains("Could not find a suitable overload for the command") Then Return
 
@@ -218,7 +239,7 @@ Public Class Bot
         End If
     End Function
 
-    Private Async Function CommandExecutedHandler(arg As CommandExecutionEventArgs, logger As LogService) As Task
+    Private Async Function CommandExecutedHandler(arg As CommandExecutionEventArgs, logger As DiscordLogService) As Task
         Await logger.PrintAsync(LogLevel.Info, "Command Service", $"{arg.Context.User.Username} ({arg.Context.User.Id}) executed '{arg.Command.QualifiedName}' in {arg.Context.Guild.Name} ({arg.Context.Guild.Id})")
     End Function
 End Class

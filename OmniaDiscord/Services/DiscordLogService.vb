@@ -5,7 +5,7 @@ Namespace Services
 
     ' Translated verbatim to VB from Kiritsu's FoxBot.
     ' https://github.com/Kiritsu/FoxBot/blob/master/src/Fox/Services/LogService.cs
-    Public Class LogService
+    Public Class DiscordLogService
         Private ReadOnly _semaphore As SemaphoreSlim
 
         Public Sub New()

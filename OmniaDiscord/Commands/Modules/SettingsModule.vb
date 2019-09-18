@@ -3,6 +3,7 @@ Imports DSharpPlus
 Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
+Imports OmniaDiscord.Commands.Bases
 Imports OmniaDiscord.Entities.Attributes
 Imports OmniaDiscord.Entities.Database
 
@@ -12,7 +13,7 @@ Namespace Commands.Modules
     <Description("Displays settings for this server. " + vbCrLf + " Child commands allow for modification of settings.")>
     <RequireBotPermissions(Permissions.EmbedLinks)>
     Public Class SettingsModule
-        Inherits OmniaCommandBase
+        Inherits OmniaDbCommandBase
 
         <GroupCommand>
         Public Async Function DisplaySettings(ctx As CommandContext) As Task
