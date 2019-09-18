@@ -1,4 +1,5 @@
-﻿Imports DSharpPlus.CommandsNext
+﻿Imports DSharpPlus
+Imports DSharpPlus.CommandsNext
 Imports DSharpPlus.CommandsNext.Attributes
 Imports DSharpPlus.Entities
 Imports OmniaDiscord.Utilities
@@ -9,6 +10,7 @@ Namespace Commands.Modules
 
         <Command("emoji"), RequireGuild>
         <Description("Displays a larger version of an emoji. " + vbCrLf + " Both unicode emojis and guild emotes are supported.")>
+        <RequireBotPermissions(Permissions.EmbedLinks)>
         <Cooldown(1, 5, CooldownBucketType.Channel)>
         Public Async Function GetEmojiCommand(ctx As CommandContext, emoji As DiscordEmoji) As Task
             Dim embed As New DiscordEmbedBuilder With {.Color = DiscordColor.CornflowerBlue}
