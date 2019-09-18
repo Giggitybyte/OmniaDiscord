@@ -68,10 +68,10 @@
             Dim rankName = GetNameFromId(seasonId, rankId)
 
             If rankName.Contains(" "c) Then
-                rankName = rankName.Replace(" "c, "-"c).Replace(rankName.Last, _numeralDictionary(rankName.Last)).ToLower
+                rankName = rankName.Replace(" "c, "-"c).Replace(rankName.Last, _numeralDictionary(rankName.Last))
             End If
 
-            Return $"{Bot.Config.ResourceUrl}/assets/siege/ranks/{rankName}.png"
+            Return $"{Bot.Config.ResourceUrl}/assets/siege/ranks/{rankName.ToLower}.png"
         End Function
     End Structure
 End Namespace
