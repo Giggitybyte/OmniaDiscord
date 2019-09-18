@@ -199,6 +199,8 @@ Public Class Bot
                     builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
                 End If
             Next
+        ElseIf arg.Exception.Message.Contains("No matching subcommands were found") Then
+            ' Do nothing here.
         Else
             Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
             builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
