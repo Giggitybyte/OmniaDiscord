@@ -138,8 +138,11 @@ Public Class Bot
     End Function
 
     Private Async Function CommandErroredHandler(arg As CommandErrorEventArgs, logger As LogService) As Task
-        If arg.Command Is Nothing Or TypeOf arg.Exception Is CommandNotFoundException Or
-            arg.Exception.Message.Contains("Could not find a suitable overload for the command") Then Return
+        If arg.Command Is Nothing Or TypeOf arg.Exception Is CommandNotFoundException Then Return
+        If arg.Exception.Message.Contains("Could not find a suitable overload for the command") Then Return
+        If arg.Exception.Message.Contains("No matching subcommands were found") Then Return
+
+        Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
 
         Dim builder As New StringBuilder
         Dim channelPerms = arg.Context.Channel.PermissionsFor(arg.Context.Guild.CurrentMember)
@@ -197,10 +200,7 @@ Public Class Bot
                     builder.AppendLine($"You need the title of `{check.MinimumTitle}` or higher to use this command.")
                 End If
             Next
-        ElseIf arg.Exception.Message.Contains("No matching subcommands were found") Then
-            ' Do nothing here.
         Else
-            Await logger.PrintAsync(LogLevel.Error, "Command Service", $"'{arg.Command.QualifiedName}' errored in guild {arg.Context.Guild.Id}: '{arg.Exception}'")
             builder.AppendLine($"Something went wrong while running `{arg.Command.QualifiedName}`")
             builder.AppendLine($"```{arg.Exception}```")
         End If
