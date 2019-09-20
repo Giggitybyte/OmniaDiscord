@@ -259,7 +259,7 @@ Namespace Commands.Modules.Gamestats
 
                 Dim filteredWeps = weaponStats.Weapons.Where(Function(w) Not w.Weapon.Category.Name = "Handgun")
                 Dim favWeapons = filteredWeps.OrderByDescending(Function(w) w.TimesChosen).Take(5)
-                Dim kdrWeapons = filteredWeps.OrderByDescending(Function(w) GeneralUtilities.CalcKdr(w.Kills, w.Deaths)).Take(5)
+                Dim kdrWeapons = filteredWeps.OrderByDescending(Function(w) w.Kd).Take(5)
 
                 Dim embed = InitEmbedBuilder(player, platform, weaponStats.LastUpdated.ToLocalTime)
                 Dim strBuilder As New StringBuilder
