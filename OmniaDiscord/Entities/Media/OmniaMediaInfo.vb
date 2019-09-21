@@ -1,7 +1,8 @@
-﻿Namespace Entities.Media
+﻿Imports Lavalink4NET.Player
+
+Namespace Entities.Media
 
     Public Class OmniaMediaInfo
-
         ''' <summary>
         ''' The title or name of the media.
         ''' </summary>
@@ -51,6 +52,10 @@
         ''' The Discord user ID of the user who requested the media.
         ''' </summary>
         Public Property Requester As ULong
-    End Class
 
+        ''' <summary>
+        ''' Base-64 encoded string containing playback information for Lavalink.
+        ''' </summary>
+        Public Property TrackIdentifier As String
+    End Class
 End Namespace

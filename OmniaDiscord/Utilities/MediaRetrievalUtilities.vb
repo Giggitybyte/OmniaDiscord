@@ -21,6 +21,31 @@ Namespace Utilities
         Private Shared _vimeoRegex As New Regex("(http:\/\/|https:\/\/)vimeo\.com\/([\w\/]+)(\?id=.*)?")
         Private Shared _youtubeRegex As New Regex("((?:https?:)?\/\/)?((?:www|m)\.)?((?:youtube\.com|youtu.be))(\/(?:[\w\-]+\?v=|embed\/|v\/)?)([\w\-]+)(\S+)?")
 
+        Public Shared Async Function GetMediaAsync(url As String) As Task(Of OmniaMediaInfo)
+            Dim mediaInfo As OmniaMediaInfo = Nothing
+            url = url.Trim
+
+            If _youtubeRegex.IsMatch(url) Then
+                mediaInfo = Await ResolveYouTubeAsync(url)
+            ElseIf _soundcloudRegex.IsMatch(url) Then
+                mediaInfo = Await ResolveSoundcloudAsync(url)
+            ElseIf _spotifyRegex.IsMatch(url) Then
+                mediaInfo = ResolveSpotify(url)
+            ElseIf _bandcampRegex.IsMatch(url) Then
+                mediaInfo = Await ResolveBandcampAsync(url)
+            ElseIf _instagramRegex.IsMatch(url) Then
+                mediaInfo = Await ResolveInstagramAsync(url)
+            ElseIf _vimeoRegex.IsMatch(url) Then
+                mediaInfo = ResolveVimeo(url)
+            ElseIf _clypRegex.IsMatch(url) Then
+                mediaInfo = ResolveClyp(url)
+            End If
+
+            If mediaInfo Is Nothing OrElse mediaInfo.Equals(New OmniaMediaInfo) Then Return Nothing
+            If String.IsNullOrEmpty(mediaInfo.ThumbnailUrl) Then mediaInfo.ThumbnailUrl = $"{Bot.Config.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png"
+            Return mediaInfo
+        End Function
+
         Public Shared Async Function GetMultipleMediaAsync(urls As IEnumerable(Of String), Optional doParsePlaylists As Boolean = False) As Task(Of OmniaRetrievalResult)
             Dim goodUrls As New ConcurrentQueue(Of OmniaMediaInfo)
             Dim badUrls As New ConcurrentQueue(Of String)
@@ -45,31 +70,6 @@ Namespace Utilities
 
             Await Task.WhenAll(trackTasks)
             Return New OmniaRetrievalResult(goodUrls, badUrls)
-        End Function
-
-        Public Shared Async Function GetMediaAsync(url As String) As Task(Of OmniaMediaInfo)
-            Dim mediaInfo As OmniaMediaInfo = Nothing
-            url = url.Trim
-
-            If _youtubeRegex.IsMatch(url) Then
-                mediaInfo = Await ResolveYouTubeAsync(url)
-            ElseIf _soundcloudRegex.IsMatch(url) Then
-                mediaInfo = Await ResolveSoundcloudAsync(url)
-            ElseIf _spotifyRegex.IsMatch(url) Then
-                mediaInfo = ResolveSpotify(url)
-            ElseIf _bandcampRegex.IsMatch(url) Then
-                mediaInfo = Await ResolveBandcampAsync(url)
-            ElseIf _instagramRegex.IsMatch(url) Then
-                mediaInfo = Await ResolveInstagramAsync(url)
-            ElseIf _vimeoRegex.IsMatch(url) Then
-                mediaInfo = ResolveVimeo(url)
-            ElseIf _clypRegex.IsMatch(url) Then
-                mediaInfo = ResolveClyp(url)
-            End If
-
-            If mediaInfo Is Nothing OrElse mediaInfo.Equals(New OmniaMediaInfo) Then Return Nothing
-            If String.IsNullOrEmpty(mediaInfo.ThumbnailUrl) Then mediaInfo.ThumbnailUrl = $"{Bot.Config.ResourceUrl}/assets/omnia/{mediaInfo.Origin}.png"
-            Return mediaInfo
         End Function
 
         Private Shared Async Function ResolveSoundcloudAsync(url As String) As Task(Of OmniaMediaInfo)

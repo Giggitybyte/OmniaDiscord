@@ -150,8 +150,7 @@ Public Class Bot
         _services.GetRequiredService(Of AdministrationService)
 
         ' Setup Lavalink
-        Dim lavalink As LavalinkNode = _services.GetRequiredService(Of IAudioService)
-        Await lavalink.InitializeAsync
+        Await _services.GetRequiredService(Of IAudioService).InitializeAsync()
 
         Dim tracking = _services.GetRequiredService(Of InactivityTrackingService)
         tracking.AddTracker(DefaultInactivityTrackers.UsersInactivityTracker)
