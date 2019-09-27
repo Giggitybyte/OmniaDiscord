@@ -29,7 +29,7 @@ Public Class Bot
     Private _runMode As OmniaRunMode = OmniaRunMode.Development
 
     Sub New(args As String())
-        If args.Length = 2 AndAlso args(0) = "-r" Then [Enum].TryParse(GetType(OmniaRunMode), args(1), _runMode)
+        If args.Length = 2 AndAlso args(0) = "-r" Then [Enum].TryParse(args(1), _runMode)
     End Sub
 
     Public Async Function RunAsync() As Task
@@ -49,18 +49,21 @@ Public Class Bot
                 logLevel = LogLevel.Info
         End Select
 
-        Dim discordClient As New DiscordShardedClient(New DiscordConfiguration With {
+        Dim client As New DiscordClient(New DiscordConfiguration With {
             .Token = token,
             .TokenType = TokenType.Bot,
             .LogLevel = logLevel,
             .MessageCacheSize = 2048
         })
 
-        Await discordClient.UseLavalinkAsync()
-        Await discordClient.UseInteractivityAsync(New InteractivityConfiguration)
+        client.UseLavalink()
+        client.UseInteractivity(New InteractivityConfiguration With {
+            .PaginationBehaviour = Enums.PaginationBehaviour.Ignore,
+            .Timeout = TimeSpan.FromSeconds(30))                                                  
+        })
 
         With New ServiceCollection
-            .AddSingleton(discordClient)
+            .AddSingleton(client)
             .AddSingleton(Of LogService)
             .AddSingleton(Of AdministrationService)
             .AddSingleton(Of DatabaseService)
@@ -70,30 +73,25 @@ Public Class Bot
             _services = .BuildServiceProvider
         End With
 
-        Await _services.GetRequiredService(Of LogService).PrintAsync(LogLevel.Info, "Initialization", $"Omnia has been started in {_runMode} mode.")
-
-        Dim cmdExtensions = Await discordClient.UseCommandsNextAsync(New CommandsNextConfiguration With {
+        Dim cmdExtension = client.UseCommandsNext(New CommandsNextConfiguration With {
             .Services = _services,
             .PrefixResolver = AddressOf PrefixResolver
         })
 
-        Dim client As DiscordShardedClient = _services.GetRequiredService(Of DiscordShardedClient)
+        cmdExtension.RegisterCommands(Assembly.GetExecutingAssembly)
+        cmdExtension.SetHelpFormatter(Of HelpFormatter)()
+
         Dim logger As LogService = _services.GetRequiredService(Of LogService)
+        Await logger.PrintAsync(LogLevel.Info, "Initialization", $"Omnia has been started in {_runMode} mode.")
 
-        For shard As Integer = 0 To cmdExtensions.Count - 1
-            cmdExtensions(shard).RegisterCommands(Assembly.GetExecutingAssembly)
-            cmdExtensions(shard).SetHelpFormatter(Of HelpFormatter)()
-
-            AddHandler cmdExtensions(shard).CommandErrored, Function(arg) CommandErroredHandler(arg, logger)
-            AddHandler cmdExtensions(shard).CommandExecuted, Function(arg) CommandExecutedHandler(arg, logger)
-        Next
-
+        AddHandler cmdExtension.CommandErrored, Function(arg) CommandErroredHandler(arg, logger)
+        AddHandler cmdExtension.CommandExecuted, Function(arg) CommandExecutedHandler(arg, logger)
         AddHandler client.DebugLogger.LogMessageReceived, Async Sub(sender, arg) Await logger.PrintAsync(arg.Level, arg.Application, arg.Message)
         AddHandler client.GuildCreated, AddressOf GuildCreatedHandler
         AddHandler client.ClientErrored, Function(arg) ClientErroredHandler(arg, logger)
         AddHandler client.Ready, AddressOf ClientReadyHandler
 
-        Await client.StartAsync
+        Await client.ConnectAsync
         Await Task.Delay(-1)
     End Function
 
@@ -129,6 +127,7 @@ Public Class Bot
     Private Function ClientReadyHandler(arg As ReadyEventArgs) As Task
         Dim client = _services.GetRequiredService(Of DiscordShardedClient)
         Dim lavalink = _services.GetRequiredService(Of LavalinkService)
+        Dim logger As LogService = _services.GetRequiredService(Of LogService)
 
         _services.GetRequiredService(Of LobbySystemService)
         _services.GetRequiredService(Of AdministrationService)
@@ -219,6 +218,6 @@ Public Class Bot
     End Function
 
     Private Async Function CommandExecutedHandler(arg As CommandExecutionEventArgs, logger As LogService) As Task
-        Await logger.PrintAsync(LogLevel.Info, "Command Service", $"{arg.Context.User.Username} ({arg.Context.User.Id}) executed '{arg.Command.QualifiedName}' in {arg.Context.Guild.Name} ({arg.Context.Guild.Id})")
+        Await logger.PrintAsync(LogLevel.Debug, "Command Service", $"{arg.Context.User.Username} ({arg.Context.User.Id}) executed '{arg.Command.QualifiedName}' in {arg.Context.Guild.Name} ({arg.Context.Guild.Id})")
     End Function
 End Class

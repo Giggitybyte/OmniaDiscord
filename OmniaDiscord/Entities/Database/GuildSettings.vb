@@ -5,9 +5,6 @@ Namespace Entities.Database
         <GuildSetting("Custom Prefix", "prefix", GetType(String), GuildTitle.Admin)>
         Public Property Prefix As String ' The prefix currently set for this guild.
 
-        <GuildSetting("DJ Restriction", "djrestriction", GetType(Boolean), GuildTitle.Moderator)>
-        Public Property IsDjRestrictionEnabled As Boolean ' Whether or not music commands are restricted to whitelisted users.
-
         <GuildSetting("Vote to Skip", "votetoskip", GetType(Boolean), GuildTitle.Moderator)>
         Public Property IsVoteToSkipEnabled As Boolean ' Whether or not a vote is needed to skip an audio track.
 

@@ -9,8 +9,6 @@ Namespace Entities.Database
 
         Public Property BlacklistedChannels As New List(Of ULong) ' Collection of channels that Omnia cannot interact with.
         Public Property MutedMembers As New List(Of ULong) ' Members who are not allowed to speak. 
-        Public Property DiscJockeys As New List(Of ULong) ' Collection of users allowed to queue music.
         Public Property LobbyChannels As New List(Of ULong) ' Collection of voice channels that will be treated as lobby channels.
-        Public Property UserPlaylists As New List(Of OmniaUserPlaylist) ' Collection of user created playlists.
     End Class
 End Namespace
